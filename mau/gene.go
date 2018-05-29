@@ -55,3 +55,4 @@ func GetChrGene(fileName string) ChrGene {
 	file.Close()
 	return chrGene
 }
+

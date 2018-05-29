@@ -1,6 +1,7 @@
 package mau
 
 import 	(
+	"fmt"
 	"math"
 )
 
@@ -236,14 +237,14 @@ func variance(gc, l float64) float64 {
 	return m
 }
 
-// Quantile of the distribution of match complexity values assuming they are normally distributed
-// Source for variance estimation: Peter Pfaffelhuber's memo of May 18, 2018
-// Source for quantile computation: https://en.wikipedia.org/wiki/Normal_distribution, section "Quantile function"
+// quant computes the quantile of the distribution of match complexity values assuming they are normally distributed.
+// Source for variance estimation: Peter Pfaffelhuber's memo of May 18, 2018.
+// Source for quantile computation: https://en.wikipedia.org/wiki/Normal_distribution, section "Quantile function".
 // g: GC content
 // l: genome length
 // w: window length
 // p: quantile
-func Quantile(g, l, w, p float64) float64 {
+func quant(g, l, w, p float64) float64 {
 	l *= 2  // forward & reverse strand
 	m := mean(g, l)
 	v := variance(g, l)
@@ -251,4 +252,9 @@ func Quantile(g, l, w, p float64) float64 {
 	s := math.Sqrt(v)
 	q := 1 + s * math.Sqrt(2) * math.Erfinv(2 * p - 1)
 	return q
+}
+
+func Quantile(a Args) {
+	q := quant(a.Qg, a.Ql, a.Qw, a.Qp)
+	fmt.Printf("%v\t%v\n", a.Qp, q)
 }

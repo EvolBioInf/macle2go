@@ -16,7 +16,15 @@ type ChrInterval map[string][]Interval
 type Sym         map[string]bool
 type IntervalSym map[Interval]Sym
 
-func PrintIntervalSym(ivSym IntervalSym) {
+func PrintIntervalSym(ivSym IntervalSym, n int, e float64, p float64) {
+	fmt.Printf("\r# O\tE\tP\n")
+	fmt.Printf("%d\t%.2f\t",n,e)
+	if p < 0 {
+		p *= -1
+		fmt.Printf("<")
+	}
+	fmt.Printf("%v\n", p)
+	fmt.Printf("# Chr\tStart\tEnd\tLen\tC_M\tSym\n")
 	for i, g := range ivSym {
 		fmt.Printf("%s\t%d\t%d\t%v\t%.4f", i.Chr, i.Start, i.End, i.End - i.Start + 1, i.Cm)
 		first := true
@@ -25,7 +33,7 @@ func PrintIntervalSym(ivSym IntervalSym) {
 				fmt.Printf("\t%s", k)
 				first = false
 			} else {
-				fmt.Printf(" %s", k)
+				fmt.Printf(",%s", k)
 			}
 		}
 		fmt.Printf("\n")

@@ -43,18 +43,66 @@ func GetPval() map[string]float64 {
 	return pVal
 }
 
+func printProgBar(c int) {
+	fmt.Fprintf(os.Stderr, "\r[")
+	for i := 0; i < c; i++ {
+		fmt.Fprintf(os.Stderr, "-")
+	}
+	for i := c; i < 10; i++ {
+		fmt.Fprintf(os.Stderr, " ")
+	}
+	fmt.Fprintf(os.Stderr, "]")
+}
+
+func GeneEnr(chrCmplx ChrCmplx, chrGene ChrGene, nObs int, args Args ) (float64, float64) {
+	var cmplx map[Cmplx]bool
+	var n, c, count, symCount int
+	var p float64 
+
+	cmplx, n = GetCmplx(chrCmplx, args)
+	step := args.II / 10
+	args.C = 0
+	args.CC = 2
+
+	for i := 0; i < args.II; i++ {
+		if (i+1) % step == 0 {
+			c++
+			printProgBar(c)
+		}
+		cm := getNcmplx(cmplx, n)
+		chrIv := GetChrInterval(cm, args)
+		ivSym := GetIntervalSym(chrIv, chrGene)
+		uniqSym := UniqSym(ivSym)
+		s := len(uniqSym)
+		symCount += s
+		if s >= nObs { count++ }
+	}
+	
+	if count > 0 {
+		p = float64(count) / float64(args.II)
+	} else {
+		p = -1.0 / float64(args.II)
+	}
+	e := float64(symCount) / float64(args.II)
+
+	return e, p
+}
+
 func Enrichment(chrCmplx ChrCmplx, chrGene ChrGene, symGO SymGO, obsGOcount map[string]int, args Args) {
 	var cmplx map[Cmplx]bool
-	var n int
-	
+	var n, count int
+
 	cmplx, n = GetCmplx(chrCmplx, args)
 	
 	step := args.II / 10
 	args.C = 0
 	args.CC = 2
-	fmt.Printf("Running Enrichment with %d iterations.\n", args.II)
+
 	for i := 0; i < args.II; i++ {
-		if (i+1) % step == 0 { fmt.Fprintf(os.Stderr, ".") }
+		if (i+1) % step == 0 {
+			count++
+			printProgBar(count)
+		}
 		cm := getNcmplx(cmplx, n)
 		chrIv := GetChrInterval(cm, args)
 		ivSym := GetIntervalSym(chrIv, chrGene)
