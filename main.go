@@ -41,12 +41,7 @@ func runAnalysis(chrCmplx mau.ChrCmplx, chrGene mau.ChrGene, symGO mau.SymGO, ar
 		if c >= args.M {
 			e := expGOcount[g]
 			f := float64(c) / e
-			fmt.Printf("%s\t%d\t%.2e\t%.2f\t", g, c, e, f)
-			if pVal[g] < 0 {
-				fmt.Printf("<%.2e", 1.0 / float64(args.II))
-			} else {
-				fmt.Printf("%.2e", pVal[g])
-			}
+			fmt.Printf("%s\t%d\t%.2e\t%.2f\t%.2e", g, c, e, f, pVal[g])
 			fmt.Printf("\t%s\n", goDescr[g])
 		} 
 	}
