@@ -3,6 +3,7 @@ package mau
 import (
 	"os"
 	"fmt"
+	"sort"
 )
 
 func GOcount(uniqSym map[string]bool, symGO SymGO) map[string]int {
@@ -63,13 +64,16 @@ func GeneEnr(chrCmplx ChrCmplx, chrGene ChrGene, nObs int, args Args ) (float64,
 	step := args.II / 10
 	args.C = 0
 	args.CC = 2
-
+	
 	for i := 0; i < args.II; i++ {
 		if (i+1) % step == 0 {
 			c++
 			printProgBar(c)
 		}
 		cm := getNcmplx(cmplx, n)
+		for _, is := range cm {
+			sort.Sort(CmplxSlice(is))
+		}
 		chrIv := GetChrInterval(cm, args)
 		ivSym := GetIntervalSym(chrIv, chrGene)
 		uniqSym := UniqSym(ivSym)

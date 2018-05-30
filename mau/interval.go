@@ -12,9 +12,15 @@ type Interval struct {
 	End   int
 	Cm    float64
 }
-type ChrInterval map[string][]Interval
+
+type IntervalSlice []Interval
+func (p IntervalSlice) Len() int           { return len(p) }
+func (p IntervalSlice) Less(i, j int) bool { return p[i].Start < p[j].Start }
+func (p IntervalSlice) Swap(i, j int)      { p[i], p[j] = p[j], p[i] }
+type ChrInterval map[string]IntervalSlice
 type Sym         map[string]bool
 type IntervalSym map[Interval]Sym
+
 
 func PrintIntervalSym(ivSym IntervalSym, n int, e float64, p float64) {
 	fmt.Printf("\r# O\tE\tP\n")
@@ -67,6 +73,17 @@ func GetIntervalSym(chrIv ChrInterval, chrGene ChrGene) IntervalSym {
 	return ivGene
 }
 
+func newIv(chr string, start, end int, cm float64) Interval {
+	i := new(Interval)
+	i.Chr = chr
+	i.Start = start
+	i.End = end
+	i.Cm = cm 
+
+	return *i
+}
+
+
 // GetChrInterval maps chromosomes to genome intervals with complexity greater than threshold.
 // Overlapping intervals are merged.
 func GetChrInterval(data ChrCmplx, a Args) ChrInterval {
@@ -82,9 +99,15 @@ func GetChrInterval(data ChrCmplx, a Args) ChrInterval {
 			ce := m.Pos + w
 			if m.Cm >= a.C && m.Cm <= a.CC {
 				if open {
-					cm += m.Cm
-					n++
-					if cs <= end { end = ce }
+					if cs <= end {     // extend
+						cm += m.Cm
+						n++
+						end = ce
+					} else {           // close
+						open = false
+						i := newIv(chr, start, end, cm/float64(n))
+						intervals[chr] = append(intervals[chr], i)
+					}
 				} else {
 					open = true
 					start = cs
@@ -96,12 +119,8 @@ func GetChrInterval(data ChrCmplx, a Args) ChrInterval {
 			} else {
 				if open && cs > end {
 					open = false
-					i := new(Interval)
-					i.Chr = chr
-					i.Start = start
-					i.End = end
-					i.Cm = cm / float64(n)
-					intervals[chr] = append(intervals[chr], *i)
+					i := newIv(chr, start, end, cm/float64(n))
+					intervals[chr] = append(intervals[chr], i)
 				}
 			}
 		}

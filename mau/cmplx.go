@@ -15,7 +15,12 @@ type Cmplx struct {
 	Cm  float64
 }
 
-type ChrCmplx map[string][]Cmplx
+type CmplxSlice []Cmplx
+func (p CmplxSlice) Len() int           { return len(p) }
+func (p CmplxSlice) Less(i, j int) bool { return p[i].Pos < p[j].Pos }
+func (p CmplxSlice) Swap(i, j int)      { p[i], p[j] = p[j], p[i] }
+
+type ChrCmplx map[string]CmplxSlice
 
 func colCount(col []string) int {
 	c := 0
