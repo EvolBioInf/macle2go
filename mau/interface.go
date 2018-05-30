@@ -32,27 +32,29 @@ type Args struct {
 
 func usage() {
 	fmt.Printf("Usage: %s <command> [options]\n", progStr)
-	fmt.Println("Commands:")
-	fmt.Println("  annotate\tannotate macle output")
-	fmt.Println("  enrichment\tgene ontology (GO) enrichment analysis")
-	fmt.Println("  quantile\tquantile of complexity distribution")
-	fmt.Println("\n  version\tprint version")
+	fmt.Printf("Commands:\n")
+	fmt.Printf("  annotate\tannotate macle output\n")
+	fmt.Printf("  enrichment\tgene ontology (GO) enrichment analysis\n")
+	fmt.Printf("  quantile\tquantile of complexity distribution\n")
+	fmt.Printf("  version\tprint version\n")
 	os.Exit(2)
 }
 
 func annotateUsage() {
 	fmt.Printf("Usage: %s annotate options [inputFiles]\n", progStr)
-	fmt.Println("Options:")
-	fmt.Println("\t-r <FILE> refGene file, e. g. http://hgdownload.soe.ucsc.edu/goldenPath/hg38/database/refGene.txt.gz")
-	fmt.Println("\t-w <NUM> window length")
-	fmt.Println("\t-c <NUM>  minimum complexity")
-	fmt.Println("\t[-C <NUM> maximum complexity; default: no upper limit]")
+	fmt.Printf("Example %s annotate -r hsRefGene.txt -c 0.9952 -w 10000 hs_10k.mac\n", progStr)
+	fmt.Printf("Options:\n")
+	fmt.Printf("\t-r <FILE> refGene file, e. g. http://hgdownload.soe.ucsc.edu/goldenPath/hg38/database/refGene.txt.gz\n")
+	fmt.Printf("\t-w <NUM> window length\n")
+	fmt.Printf("\t-c <NUM>  minimum complexity\n")
+	fmt.Printf("\t[-C <NUM> maximum complexity; default: no upper limit]\n")
 	fmt.Printf("\t[-I <NUM> iterations; default: %d]\n", 10000)
 	os.Exit(2)
 }
 
 func quantileUsage() {
 	fmt.Printf("Usage: %s quantile options\n", progStr)
+	fmt.Printf("Example: %s quantile -l 2937655681 -g 0.408679 -w 10000 -p 0.05\n", progStr)
 	fmt.Printf("Options:\n")
 	fmt.Printf("\t-g <NUM> gc-content\n")
 	fmt.Printf("\t-l <NUM> genome length\n")
@@ -62,13 +64,14 @@ func quantileUsage() {
 
 func enrichmentUsage() {
 	fmt.Printf("Usage: %s enrichment options [inputFiles]\n", progStr)
-	fmt.Println("Options:")
-	fmt.Println("\t-r <FILE> refGene file, e. g. http://hgdownload.soe.ucsc.edu/goldenPath/hg38/database/refGene.txt.gz")
-	fmt.Println("\t-i <FILE> gene-info file, e. g. ftp://ftp.ncbi.nih.gov/gene/DATA/GENE_INFO/Mammalia/Homo_sapiens.gene_info.gz")
-	fmt.Println("\t-g <FILE> gene2go file, e. g. ftp://ftp.ncbi.nih.gov/gene/DATA/gene2go.gz")
-	fmt.Println("\t-c <NUM>  minimum complexity")
-	fmt.Println("\t-w <NUM>  window length")
-	fmt.Println("\t[-C <NUM>  maximum complexity; default: no upper limit]")
+	fmt.Printf("Example: %s enrichment -i Homo_sapiens.gene_info -g gene2go -r hsRefGene.txt -c 0.9952 -w 10000 hs_10k.mac\n", progStr)
+	fmt.Printf("Options:\n")
+	fmt.Printf("\t-r <FILE> refGene file, e. g. http://hgdownload.soe.ucsc.edu/goldenPath/hg38/database/refGene.txt.gz\n")
+	fmt.Printf("\t-i <FILE> gene-info file, e. g. ftp://ftp.ncbi.nih.gov/gene/DATA/GENE_INFO/Mammalia/Homo_sapiens.gene_info.gz\n")
+	fmt.Printf("\t-g <FILE> gene2go file, e. g. ftp://ftp.ncbi.nih.gov/gene/DATA/gene2go.gz\n")
+	fmt.Printf("\t-c <NUM>  minimum complexity\n")
+	fmt.Printf("\t-w <NUM>  window length\n")
+	fmt.Printf("\t[-C <NUM>  maximum complexity; default: no upper limit]\n")
 	fmt.Printf("\t[-I <NUM> iterations; default: %d]\n", 10000)
 	fmt.Printf("\t[-m <NUM>  minimum number of genes per GO-category; default: %d]\n", 10)
 }
@@ -140,6 +143,10 @@ func GetArgs(prog, vers string) Args {
 	case "--help":
 		usage()
 	case "version":
+		version()
+	case "-v":
+		version()
+	case "--version":
 		version()
 	default:
 		fmt.Printf("%q is not a valid command.\n", os.Args[1])

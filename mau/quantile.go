@@ -256,5 +256,5 @@ func quant(g, l, w, p float64) float64 {
 
 func Quantile(a Args) {
 	q := quant(a.Qg, a.Ql, a.Qw, a.Qp)
-	fmt.Printf("%v\t%v\n", a.Qp, q)
+	fmt.Printf("%v\t%v\t%v\n", a.Qw, a.Qp, q)
 }
