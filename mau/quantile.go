@@ -244,17 +244,24 @@ func variance(gc, l float64) float64 {
 // l: genome length
 // w: window length
 // p: quantile
-func quant(g, l, w, p float64) float64 {
+func quant(g, l, w, p float64) (float64, float64) {
 	l *= 2  // forward & reverse strand
 	m := mean(g, l)
 	v := variance(g, l)
 	v = v * w / m / (w - 2 * m) / (w - 2 * m)
 	s := math.Sqrt(v)
 	q := 1 + s * math.Sqrt(2) * math.Erfinv(2 * p - 1)
-	return q
+	return q, gauss(m, s, q)
+}
+
+func gauss(a, s, x float64) float64 {
+	a = 1
+	f := 1. / math.Sqrt(2. * math.Pi) / s * math.Exp(-1./2. * (x-a)*(x-a)/s/s)
+	return f
 }
 
 func Quantile(a Args) {
-	q := quant(a.Qg, a.Ql, a.Qw, a.Qp)
-	fmt.Printf("%v\t%v\t%v\n", a.Qw, a.Qp, q)
+	q, f := quant(a.Qg, a.Ql, a.Qw, a.Qp)
+	fmt.Printf("#SeqLen\tWinLen\tP\tQ\tF(Q)\n")
+	fmt.Printf("%v\t%v\t%v\t%v\t%v\n", a.Ql, a.Qw, a.Qp, q, f)
 }
