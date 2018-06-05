@@ -1,57 +1,117 @@
 package mau
 
 import (
-	"strconv"
-	"strings"
-	"io/ioutil"
-	"os"
 	"bufio"
 	"fmt"
+	"io/ioutil"
+	"os"
+	"strconv"
+	"strings"
 )
 
-type Cmplx struct {
-	Chr string
-	Pos int
-	Cm  float64
-}
+var refGeneData []Interval
 
-type CmplxSlice []Cmplx
-func (p CmplxSlice) Len() int           { return len(p) }
-func (p CmplxSlice) Less(i, j int) bool { return p[i].Pos < p[j].Pos }
-func (p CmplxSlice) Swap(i, j int)      { p[i], p[j] = p[j], p[i] }
-
-type ChrCmplx map[string]CmplxSlice
-
-func colCount(col []string) int {
-	c := 0
-	for _, s := range col {
-		if len(s) > 0 { c++ }
+// Cmplx generates annotated complexity data
+func Cmplx(macleFile, refGeneFile string) []Interval {
+	if refGeneData == nil {
+		refGeneData = refGene(refGeneFile)
 	}
-	return c
+	m, w, s, c := macle(macleFile)
+	annotate(m, refGeneData, w, s)
+	ma := rmNeg(m, c)
+	return ma
 }
 
-// GetCmplx constructs a set of all complexity values in chrCmplx.
-func GetCmplx(chrCmplx ChrCmplx, a Args) (map[Cmplx]bool, int) {
-	cmplx := make(map[Cmplx]bool)
-	var n int
+// MergeCmplx extracts and merges intervals with where args.C <= complexity <= args.CC
+func MergeCmplx(cmplx []Interval, args Args) ([]Interval, int) {
+	var co []Interval
+	var iv *Interval
+	open := false
+	n := 0
+	count := 0
+	
 
-	for _, cm := range chrCmplx {
-		for _, c := range cm {
-			cmplx[c] = true
-			if c.Cm >= a.C && c.Cm <= a.CC { n++ }
-			
+	for _, i := range cmplx {
+		if i.Cm >= args.C && i.Cm <= args.CC {
+			if open {                // extend
+				if i.Start <= iv.End {
+					iv.End = i.End
+					iv.Cm += i.Cm
+					if iv.Sym == nil { iv.Sym = make(map[string]bool) }
+					for k, _ := range i.Sym { iv.Sym[k] = true }
+					n++
+					count++
+				} else {
+					open = false
+				}
+			} else {                 // open
+				iv = NewInterval(i.Chr, i.Start, i.End, i.Cm, "", i.Sym)
+				open = true
+				n = 1
+				count++
+			}
+		} else {
+			if open && i.Start > iv.End {               // close
+				open = false
+				iv.Cm /= float64(n)
+				co = append(co, *iv)
+			} 
 		}
 	}
-	return cmplx, n
+	return co, count
 }
 
-// GetChrCmplx reads macle output and returns a map of chromosomes to a map of positions to complexity values.
-func GetChrCmplx(fileName string) ChrCmplx {
+func rmNeg(macle ChrInterval, chr []string) []Interval {
+	var ma []Interval
+
+	for _, c := range chr {
+		iv := macle[c]
+		for _, i := range iv {
+			if i.Cm > -1 { ma = append(ma, i) }
+		}
+	}
+
+	return ma
+}
+
+// annotate adds gene symbols to macle intervals
+func annotate(macle ChrInterval, refGene []Interval, win, step int) {
+	for _, g := range refGene {
+		ma := macle[g.Chr]
+		if ma == nil { continue }
+		s := (g.Start + step - win) / step
+		e := (g.End + step) / step
+		if s >= len(ma) { s = len(ma) - 1 }
+		if e >= len(ma) { e = len(ma) - 1 }
+		if s < 0 { s = 0 }
+		foundS := false
+		foundE := false
+		for i := s; i <= e; i++ {
+			if ma[i].Start <= g.End && ma[i].End >= g.Start {
+				if g.Start >= ma[i].Start && g.Start <= ma[i].End { foundS = true }
+				if g.End   >= ma[i].Start && g.End   <= ma[i].End { foundE = true }
+				if ma[i].Sym == nil { ma[i].Sym = make(map[string]bool) }
+				for k, _ := range g.Sym {
+					ma[i].Sym[k] = true
+				}
+			}
+		}
+		if foundS != true || foundE != true {
+			fmt.Println(g)
+			os.Exit(2)
+		}
+	}
+}
+
+// macle reads complexity data from a macle file
+func macle(fileName string) (ChrInterval, int, int, []string) {
 	var str1, str2 []string
 	const numCol = 3
 	var file *os.File
 	var err error
+	var cs []string
 
+	ca := make(map[string]bool)
 	if fileName == "stdin" {
 		file = os.Stdin
 	} else {
@@ -63,33 +123,75 @@ func GetChrCmplx(fileName string) ChrCmplx {
 	Check(err)
 	// Split data into lines
 	str1 = strings.Split(string(data), "\n")
+	// Determine window length
+	str2 = strings.Split(str1[0], "\t")
+	p1, err := strconv.Atoi(str2[1])
+	Check(err)
+	w := p1 * 2
+	// Determine step length
+	str2 = strings.Split(str1[1], "\t")
+	p2, err := strconv.Atoi(str2[1])
+	s := p2 - p1
 	// Allocate memory 
-	chrCmplx := make(ChrCmplx)
+	chrIv := make(ChrInterval)
 	// Iterate over lines
 	for _, s := range str1 {
 		// Skip empty lines and comment lines
 		if len(s) == 0 || s[0:1] == "#" { continue }
 		// Split line into columns
 		str2 = strings.Split(s, "\t")
-		c := colCount(str2)
-		if c != numCol {
-			fmt.Fprintf(os.Stderr, "Warning[GetMacle]: Expect %d columns, but find %d in %s\n", numCol, len(str2), s)
-			continue
-		}
-		// Read chromosome, position, and compolexity
+		// Read chromosome, position, and complexity
 		chr := str2[0]
+		if ca[chr] == false {
+			ca[chr] = true
+			cs = append(cs, chr)
+		}
 		pos, err := strconv.Atoi(str2[1])
 		Check(err)
 		com, err := strconv.ParseFloat(str2[2], 64)
 		Check(err)
-		// Skip lines with negative complexity
-		if com < 0 { continue }
-		co := new(Cmplx)
-		co.Pos = pos
-		co.Cm = com
-		co.Chr = chr
-		chrCmplx[chr] = append(chrCmplx[chr], *co)
+		s := pos - w/2 + 1
+		e := pos + w/2
+		co := NewInterval(chr, s, e, com, "", nil)
+		chrIv[chr] = append(chrIv[chr], *co)
 	}
 	file.Close()
-	return chrCmplx
+	return chrIv, w, s, cs
 }
+
+
+// refGene reads a refGene file and returns a map of chromosomes to slices of intervals denoting genes
+func refGene(fileName string) []Interval {
+	var str1, str2 []string
+	var chr string
+	var start, end int
+	var file *os.File
+	var err error
+	var rg []Interval
+
+	file, err = os.Open(fileName)
+	Check(err)
+	r := bufio.NewReader(file)
+	data, err := ioutil.ReadAll(r)
+	Check(err)
+	// Split data into lines
+	str1 = strings.Split(string(data), "\n")
+	// Iterate over lines
+	for _, s := range str1 {
+		// Split line into columns
+		str2 = strings.Split(s, "\t")
+		if len(str2) != 16 {
+			continue
+		}
+		chr = str2[2]
+		start, err = strconv.Atoi(str2[4])
+		Check(err)
+		end, err = strconv.Atoi(str2[5])
+		Check(err)
+		gene := NewInterval(chr, start, end, 0, str2[12], nil)
+		rg = append(rg, *gene)
+	}
+	file.Close()
+	return rg
+}
+
