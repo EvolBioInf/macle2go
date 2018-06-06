@@ -193,13 +193,19 @@ func refGene(fileName string, args Args) []Interval {
 			continue
 		}
 		chr = str2[2]
+		strand := str2[3]
 		start, err = strconv.Atoi(str2[4])
 		Check(err)
 		end, err = strconv.Atoi(str2[5])
 		Check(err)
 		if !args.GG {
-			end = start + args.Pd
-			start -= args.Pu
+			if strand == "+" {
+				end = start + args.Pd
+				start -= args.Pu
+			} else {
+				start = end - args.Pd
+				end   += args.Pu
+			}
 		}
 		gene := NewInterval(chr, start, end, 0, str2[12], nil)
 		rg = append(rg, *gene)
