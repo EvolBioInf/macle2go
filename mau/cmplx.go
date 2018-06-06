@@ -7,17 +7,19 @@ import (
 	"os"
 	"strconv"
 	"strings"
+	"sort"
 )
 
 var refGeneData []Interval
 
 // Cmplx generates annotated complexity data
-func Cmplx(macleFile, refGeneFile string) []Interval {
+func Cmplx(macleFile string, args Args) []Interval {
+	refGeneFile := args.R
 	if refGeneData == nil {
 		refGeneData = refGene(refGeneFile)
 	}
-	m, w, s, c := macle(macleFile)
-	annotate(m, refGeneData, w, s)
+	m, s, c := macle(macleFile, args.W)
+	annotate(m, refGeneData, args.W, s)
 	ma := rmNeg(m, c)
 	return ma
 }
@@ -29,7 +31,6 @@ func MergeCmplx(cmplx []Interval, args Args) ([]Interval, int) {
 	open := false
 	n := 0
 	count := 0
-	
 
 	for _, i := range cmplx {
 		if i.Cm >= args.C && i.Cm <= args.CC {
@@ -79,11 +80,8 @@ func annotate(macle ChrInterval, refGene []Interval, win, step int) {
 	for _, g := range refGene {
 		ma := macle[g.Chr]
 		if ma == nil { continue }
-		s := (g.Start + step - win) / step
-		e := (g.End + step) / step
-		if s >= len(ma) { s = len(ma) - 1 }
-		if e >= len(ma) { e = len(ma) - 1 }
-		if s < 0 { s = 0 }
+		s := sort.Search(len(ma), func(i int) bool { return ma[i].End >= g.Start })
+		e := sort.Search(len(ma), func(i int) bool { return ma[i].Start >= g.End })
 		foundS := false
 		foundE := false
 		for i := s; i <= e; i++ {
@@ -97,14 +95,13 @@ func annotate(macle ChrInterval, refGene []Interval, win, step int) {
 			}
 		}
 		if foundS != true || foundE != true {
-			fmt.Println(g)
-			os.Exit(2)
+			fmt.Println("Warning macle2go: Could not find macle-interval for gene ", g)
 		}
 	}
 }
 
 // macle reads complexity data from a macle file
-func macle(fileName string) (ChrInterval, int, int, []string) {
+func macle(fileName string, win int) (ChrInterval, int, []string) {
 	var str1, str2 []string
 	const numCol = 3
 	var file *os.File
@@ -127,7 +124,6 @@ func macle(fileName string) (ChrInterval, int, int, []string) {
 	str2 = strings.Split(str1[0], "\t")
 	p1, err := strconv.Atoi(str2[1])
 	Check(err)
-	w := p1 * 2
 	// Determine step length
 	str2 = strings.Split(str1[1], "\t")
 	p2, err := strconv.Atoi(str2[1])
@@ -150,13 +146,13 @@ func macle(fileName string) (ChrInterval, int, int, []string) {
 		Check(err)
 		com, err := strconv.ParseFloat(str2[2], 64)
 		Check(err)
-		s := pos - w/2 + 1
-		e := pos + w/2
-		co := NewInterval(chr, s, e, com, "", nil)
+		start := pos - win/2 + 1
+		end := pos + win/2
+		co := NewInterval(chr, start, end, com, "", nil)
 		chrIv[chr] = append(chrIv[chr], *co)
 	}
 	file.Close()
-	return chrIv, w, s, cs
+	return chrIv, s, cs
 }
 
 
@@ -194,4 +190,3 @@ func refGene(fileName string) []Interval {
 	file.Close()
 	return rg
 }
-

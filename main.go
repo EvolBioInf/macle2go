@@ -18,7 +18,7 @@ func runAnalysis(cmplx []mau.Interval, symGO mau.SymGO, args mau.Args) {
 	// var pVal       map[string]float64
 	// var e, p       float64
 
-//	fmt.Fprintf(os.Stderr, "\rGet intervals with %f <= complexity %f...", args.C, args.CC);
+	//	fmt.Fprintf(os.Stderr, "\rGet intervals with %f <= complexity %f...", args.C, args.CC);
 	co, n := mau.MergeCmplx(cmplx, args)
 	if args.Cm == "annotate" {
 		mau.PrintIntervalSym(co, n, 0, 0, 0)
@@ -81,13 +81,13 @@ func main() {
 	}
 	// Iterate over macle output files containing complexity data.
 	if len(args.Files) == 0 {
-		fmt.Fprintf(os.Stderr, "Reading macle data...\n")
-		cmplx = mau.Cmplx("stdin", args.R)
+		fmt.Fprintf(os.Stderr, "Reading macle data from stdin...\n")
+		cmplx = mau.Cmplx("stdin", args)
 		runAnalysis(cmplx, symGO, args)
 	} else {
 		for _, f := range args.Files {
-			fmt.Fprintf(os.Stderr, "Reading macle data...\n")
-			cmplx = mau.Cmplx(f, args.R)
+			fmt.Fprintf(os.Stderr, "Reading macle data from file...\n")
+			cmplx = mau.Cmplx(f, args)
 			runAnalysis(cmplx, symGO, args)
 		}
 	}
