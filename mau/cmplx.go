@@ -16,7 +16,7 @@ var refGeneData []Interval
 func Cmplx(macleFile string, args Args) []Interval {
 	refGeneFile := args.R
 	if refGeneData == nil {
-		refGeneData = refGene(refGeneFile)
+		refGeneData = refGene(refGeneFile, args)
 	}
 	m, s, c := macle(macleFile, args.W)
 	annotate(m, refGeneData, args.W, s)
@@ -25,12 +25,13 @@ func Cmplx(macleFile string, args Args) []Interval {
 }
 
 // MergeCmplx extracts and merges intervals with where args.C <= complexity <= args.CC
-func MergeCmplx(cmplx []Interval, args Args) ([]Interval, int) {
+func MergeCmplx(cmplx []Interval, args Args) ([]Interval, int, int) {
 	var co []Interval
 	var iv *Interval
 	open := false
 	n := 0
-	count := 0
+	wc := 0
+	sc := 0
 
 	for _, i := range cmplx {
 		if i.Cm >= args.C && i.Cm <= args.CC {
@@ -41,7 +42,7 @@ func MergeCmplx(cmplx []Interval, args Args) ([]Interval, int) {
 					if iv.Sym == nil { iv.Sym = make(map[string]bool) }
 					for k, _ := range i.Sym { iv.Sym[k] = true }
 					n++
-					count++
+					wc++
 				} else {
 					open = false
 				}
@@ -49,7 +50,7 @@ func MergeCmplx(cmplx []Interval, args Args) ([]Interval, int) {
 				iv = NewInterval(i.Chr, i.Start, i.End, i.Cm, "", i.Sym)
 				open = true
 				n = 1
-				count++
+				wc++
 			}
 		} else {
 			if open && i.Start > iv.End {               // close
@@ -59,7 +60,18 @@ func MergeCmplx(cmplx []Interval, args Args) ([]Interval, int) {
 			} 
 		}
 	}
-	return co, count
+	sc = symCount(co)
+	return co, wc, sc
+}
+
+func symCount(co []Interval) int {
+	sym := make(map[string]bool)
+	for _, iv := range co {
+		for k, _ := range iv.Sym {
+			sym[k] = true
+		}
+	}
+	return len(sym)
 }
 
 func rmNeg(macle ChrInterval, chr []string) []Interval {
@@ -82,6 +94,7 @@ func annotate(macle ChrInterval, refGene []Interval, win, step int) {
 		if ma == nil { continue }
 		s := sort.Search(len(ma), func(i int) bool { return ma[i].End >= g.Start })
 		e := sort.Search(len(ma), func(i int) bool { return ma[i].Start >= g.End })
+		if s == len(ma) || e == len(ma) { continue }
 		foundS := false
 		foundE := false
 		for i := s; i <= e; i++ {
@@ -157,7 +170,7 @@ func macle(fileName string, win int) (ChrInterval, int, []string) {
 
 
 // refGene reads a refGene file and returns a map of chromosomes to slices of intervals denoting genes
-func refGene(fileName string) []Interval {
+func refGene(fileName string, args Args) []Interval {
 	var str1, str2 []string
 	var chr string
 	var start, end int
@@ -184,6 +197,10 @@ func refGene(fileName string) []Interval {
 		Check(err)
 		end, err = strconv.Atoi(str2[5])
 		Check(err)
+		if !args.GG {
+			end = start + args.Pd
+			start -= args.Pu
+		}
 		gene := NewInterval(chr, start, end, 0, str2[12], nil)
 		rg = append(rg, *gene)
 	}

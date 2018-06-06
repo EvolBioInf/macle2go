@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"os"
+	"sort"
 	"strings"
 
 	"github.com/evolbioinf/macle2go/mau"
@@ -17,11 +18,34 @@ func runAnalysis(cmplx []mau.Interval, symGO mau.SymGO, args mau.Args) {
 	// var expGOcount map[string]float64
 	// var pVal       map[string]float64
 	// var e, p       float64
-
+	var str []string
 	//	fmt.Fprintf(os.Stderr, "\rGet intervals with %f <= complexity %f...", args.C, args.CC);
-	co, n := mau.MergeCmplx(cmplx, args)
+	co, w, g := mau.MergeCmplx(cmplx, args)
 	if args.Cm == "annotate" {
-		mau.PrintIntervalSym(co, n, 0, 0, 0)
+		e, p := mau.GeneEnr(cmplx, w, g, args)
+		mau.PrintIntervalSym(co, w, g, e, p)
+	}
+	if args.Cm == "enrichment" {
+		uniqSym := make(map[string]bool)
+		for _, iv := range co {
+			for k, _ := range iv.Sym { uniqSym[k] = true }
+		}
+		obsGOcount := mau.GOcount(uniqSym, symGO)
+		expGOcount, pVal := mau.FuncEnr(cmplx, symGO, g, obsGOcount, args)
+		for k, _ := range obsGOcount {
+			str = append(str, k)
+		}
+		sort.Strings(str)
+		gd := mau.GOdescr()
+		for _, g := range str {
+			d := gd[g]
+			d = strings.Replace(d, " ", "_", -1)
+			if obsGOcount[g] >= args.M {
+				o := obsGOcount[g]
+				e := expGOcount[g]
+				fmt.Printf("%s\t%d\t%.2f\t%.2f\t%.2e\t%s\n", g, o, e, float64(o)/e, pVal[g], d)
+			}
+		}
 	}
 	// for chr, iv := range(chrIv) {
 	// 	fmt.Println(chr, len(iv))

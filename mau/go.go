@@ -89,8 +89,8 @@ func getGidGO(file *os.File) GidGO {
 
 var goDescr map[string]string
 
-// GetGOdescr takes as input a gene-info file and a gene2go file and returns a map of GO-accessions and their descriptions.
-func GetGOdescr() map[string]string {
+// GOdescr takes as input a gene-info file and a gene2go file and returns a map of GO-accessions and their descriptions.
+func GOdescr() map[string]string {
 	if goDescr == nil {
 		log.Fatal("GO-descriptions not available; need to call getGidGO first")
 	}
