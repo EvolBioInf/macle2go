@@ -10,16 +10,7 @@ import (
 )
 
 func runAnalysis(cmplx []mau.Interval, symGO mau.SymGO, args mau.Args) {
-	// var chrIv mau.ChrInterval
-	// var ivSym mau.ChrInterval
-	// var uniqSym    map[string]bool
-	// var goDescr    map[string]string
-	// var obsGOcount map[string]int
-	// var expGOcount map[string]float64
-	// var pVal       map[string]float64
-	// var e, p       float64
 	var str []string
-	//	fmt.Fprintf(os.Stderr, "\rGet intervals with %f <= complexity %f...", args.C, args.CC);
 	co, w, g := mau.MergeCmplx(cmplx, args)
 	if args.Cm == "annotate" {
 		e, p := mau.GeneEnr(cmplx, w, g, args)
@@ -47,33 +38,6 @@ func runAnalysis(cmplx []mau.Interval, symGO mau.SymGO, args mau.Args) {
 			}
 		}
 	}
-	// for chr, iv := range(chrIv) {
-	// 	fmt.Println(chr, len(iv))
-	// }
-	// fmt.Fprintf(os.Stderr, "\rGet genes per interval...")
-	// fmt.Fprintf(os.Stderr, "\rMake genes unique...")
-	// uniqSym = mau.UniqSym(chrIv)
-	// if args.Cm == "annotate" {
-	// 	l := len(uniqSym)
-	// 	if args.II != 0 {
-	// 		e, p = mau.GeneEnr(chrCmplx, l, args)
-	// 	}
-	// 	mau.PrintIntervalSym(ivSym, l, e, p)
-	// 	return
-	// }
-	// goDescr = mau.GetGOdescr()
-	// obsGOcount = mau.GOcount(uniqSym, symGO)
-	// mau.Enrichment(chrCmplx, chrGene, symGO, obsGOcount, args)
-	// expGOcount = mau.GetExpGOcount()
-	// pVal = mau.GetPval()
-	// for g, c := range obsGOcount {
-	// 	if c >= args.M {
-	// 		e := expGOcount[g]
-	// 		f := float64(c) / e
-	// 		fmt.Printf("%s\t%d\t%.2e\t%.2f\t%.2e", g, c, e, f, pVal[g])
-	// 		fmt.Printf("\t%s\n", goDescr[g])
-	// 	} 
-	// }
 }
 
 func progname(str string) string {
@@ -100,17 +64,14 @@ func main() {
 	}
 	// Get symbol/GO map from info-gene and gene2go files?
 	if args.Cm == "enrichment" {
-		fmt.Fprintf(os.Stderr, "Reading gene & GO data...\n")
 		symGO = mau.GetSymGO(args.I, args.G)
 	}
 	// Iterate over macle output files containing complexity data.
 	if len(args.Files) == 0 {
-		fmt.Fprintf(os.Stderr, "Reading macle data from stdin...\n")
 		cmplx = mau.Cmplx("stdin", args)
 		runAnalysis(cmplx, symGO, args)
 	} else {
 		for _, f := range args.Files {
-			fmt.Fprintf(os.Stderr, "Reading macle data from file...\n")
 			cmplx = mau.Cmplx(f, args)
 			runAnalysis(cmplx, symGO, args)
 		}

@@ -96,69 +96,6 @@ func AddSym(intervals, genes ChrInterval) {
 	}
 }
 
-// func newIv(chr string, start, end int, cm float64) Interval {
-// 	i := NewInterval()
-// 	i.Chr = chr
-// 	i.Start = start
-// 	i.End = end
-// 	i.Cm = cm 
-
-// 	return *i
-// }
-
-
-// GetChrInterval maps chromosomes to genome intervals with complexity greater than threshold.
-// Overlapping intervals are merged.
-// func GetChrInterval(data ChrCmplx, a Args) ChrInterval {
-// 	var start, end, n int
-// 	var cm float64
-// 	var iv Interval
-
-
-// 	intervals := make(ChrInterval)
-// 	w := int(a.W / 2.0)
-// 	for chr, ma := range data {
-// 		open := false
-// 		for _, m := range ma {
-// 			cs := m.Pos - w + 1
-// 			ce := m.Pos + w
-// 			sy := m.Sym
-// 			if m.Cm >= a.C && m.Cm <= a.CC {
-// 				if open {
-// 					if cs <= end {     // extend
-// 						iv.End = ce
-// 						iv.Cm += m.Cm
-// 						n++
-// 					} else {           // close
-// 						open = false
-// 					}
-// 				} else {                   // open
-// 					if start < 1 { start = 1 }
-// 					iv = newIv(chr, start, end, m.Cm, m.Sym)
-// 					open = true
-// 					n = 1
-// 				}
-// 			} else {
-// 				if open && cs > end {
-// 					open = false
-// 					iv = newIv(chr, start, end, cm/float64(n))
-// 					for s, _ := range sy { iv.Sym[s] = true }
-// 					intervals[chr] = append(intervals[chr], iv)
-// 				}
-// 			}
-// 		}
-// 		if open {
-// 			i := NewInterval()
-// 			i.Chr = chr
-// 			i.Start = start
-// 			i.End = end
-// 			i.Cm = cm / float64(n)
-// 			intervals[chr] = append(intervals[chr], *i)
-// 		}
-// 	}
-// 	return intervals
-// }
-
 // UniqGenes extracts the set of gene symbols contained in intervals
 func UniqSym(intervals ChrInterval) map[string] bool {
 	uniqSym := make(map[string]bool)
