@@ -2,12 +2,11 @@ package mau
 
 import (
 	"bufio"
-	"fmt"
 	"io/ioutil"
 	"os"
+	"sort"
 	"strconv"
 	"strings"
-	"sort"
 )
 
 var refGeneData []Interval
@@ -35,8 +34,8 @@ func MergeCmplx(cmplx []Interval, args Args) ([]Interval, int, int) {
 
 	for _, i := range cmplx {
 		if i.Cm >= args.C && i.Cm <= args.CC {
-			if open {                // extend
-				if i.Start <= iv.End {
+			if open {                
+				if i.Start <= iv.End + 1{    // extend
 					iv.End = i.End
 					iv.Cm += i.Cm
 					if iv.Sym == nil { iv.Sym = make(map[string]bool) }
@@ -44,16 +43,20 @@ func MergeCmplx(cmplx []Interval, args Args) ([]Interval, int, int) {
 					n++
 					wc++
 				} else {
-					open = false
+					iv.Cm /= float64(n)  // close old, open new
+					co = append(co, *iv)
+					iv = NewInterval(i.Chr, i.Start, i.End, i.Cm, "", i.Sym)
+					n = 1
+					wc++
 				}
-			} else {                 // open
+			} else {                             // open new
 				iv = NewInterval(i.Chr, i.Start, i.End, i.Cm, "", i.Sym)
 				open = true
 				n = 1
 				wc++
 			}
 		} else {
-			if open && i.Start > iv.End {               // close
+			if open && i.Start > iv.End {        // close
 				open = false
 				iv.Cm /= float64(n)
 				co = append(co, *iv)
@@ -94,21 +97,16 @@ func annotate(macle ChrInterval, refGene []Interval, win, step int) {
 		if ma == nil { continue }
 		s := sort.Search(len(ma), func(i int) bool { return ma[i].End >= g.Start })
 		e := sort.Search(len(ma), func(i int) bool { return ma[i].Start >= g.End })
-		if s == len(ma) || e == len(ma) { continue }
-		foundS := false
-		foundE := false
+		l := len(ma)
+		if s == l && e != l { s = 0 }
+		if s != l && e == l { e = l-1 }
 		for i := s; i <= e; i++ {
 			if ma[i].Start <= g.End && ma[i].End >= g.Start {
-				if g.Start >= ma[i].Start && g.Start <= ma[i].End { foundS = true }
-				if g.End   >= ma[i].Start && g.End   <= ma[i].End { foundE = true }
 				if ma[i].Sym == nil { ma[i].Sym = make(map[string]bool) }
 				for k, _ := range g.Sym {
 					ma[i].Sym[k] = true
 				}
 			}
-		}
-		if foundS != true || foundE != true {
-			fmt.Println("Warning macle2go: Could not find macle-interval for gene ", g)
 		}
 	}
 }
