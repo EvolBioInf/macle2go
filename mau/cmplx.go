@@ -98,6 +98,7 @@ func annotate(macle ChrInterval, refGene []Interval, win, step int) {
 		s := sort.Search(len(ma), func(i int) bool { return ma[i].End >= g.Start })
 		e := sort.Search(len(ma), func(i int) bool { return ma[i].Start >= g.End })
 		l := len(ma)
+		if s == l && e == l { continue }  // No interval contains gene g
 		if s == l && e != l { s = 0 }
 		if s != l && e == l { e = l-1 }
 		for i := s; i <= e; i++ {
