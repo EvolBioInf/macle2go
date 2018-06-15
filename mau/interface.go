@@ -59,7 +59,7 @@ func quantileUsage() {
 
 func annotateUsage() {
 	fmt.Printf("Usage: %s annotate options [inputFiles]\n", progStr)
-	fmt.Printf("Example %s annotate -r hsRefGene.txt -c 0.9952 -w 10000 hs_10k.mac\n", progStr)
+	fmt.Printf("Example %s annotate -r hsRefGene.txt -c 0.9968 -w 20000 hs_20k.mac\n", progStr)
 	fmt.Printf("Options:\n")
 	fmt.Printf("\t-r <FILE> refGene file, e. g. http://hgdownload.soe.ucsc.edu/goldenPath/hg38/database/refGene.txt.gz\n")
 	fmt.Printf("\t-w <NUM> window length\n")
@@ -75,7 +75,7 @@ func annotateUsage() {
 
 func enrichmentUsage() {
 	fmt.Printf("Usage: %s enrichment options [inputFiles]\n", progStr)
-	fmt.Printf("Example: %s enrichment -i Homo_sapiens.gene_info -g gene2go -r hsRefGene.txt -c 0.9952 -w 10000 hs_10k.mac\n", progStr)
+	fmt.Printf("Example: %s enrichment -i Homo_sapiens.gene_info -g gene2go -r hsRefGene.txt -c 0.9968 -w 20000 hs_20k.mac\n", progStr)
 	fmt.Printf("Options:\n")
 	fmt.Printf("\t-r <FILE> refGene file, e. g. http://hgdownload.soe.ucsc.edu/goldenPath/hg38/database/refGene.txt.gz\n")
 	fmt.Printf("\t-i <FILE> gene-info file, e. g. ftp://ftp.ncbi.nih.gov/gene/DATA/GENE_INFO/Mammalia/Homo_sapiens.gene_info.gz\n")
