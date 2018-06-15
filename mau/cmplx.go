@@ -24,13 +24,10 @@ func Cmplx(macleFile string, args Args) []Interval {
 }
 
 // MergeCmplx extracts and merges intervals with where args.C <= complexity <= args.CC
-func MergeCmplx(cmplx []Interval, args Args) ([]Interval, int, int) {
-	var co []Interval
+func MergeCmplx(cmplx []Interval, args Args) (co []Interval, numWin, numIv, numSym int) {
 	var iv *Interval
 	open := false
 	n := 0
-	wc := 0
-	sc := 0
 
 	for _, i := range cmplx {
 		if i.Cm >= args.C && i.Cm <= args.CC {
@@ -41,19 +38,21 @@ func MergeCmplx(cmplx []Interval, args Args) ([]Interval, int, int) {
 					if iv.Sym == nil { iv.Sym = make(map[string]bool) }
 					for k, _ := range i.Sym { iv.Sym[k] = true }
 					n++
-					wc++
+					numWin++
 				} else {
 					iv.Cm /= float64(n)  // close old, open new
 					co = append(co, *iv)
 					iv = NewInterval(i.Chr, i.Start, i.End, i.Cm, "", i.Sym)
 					n = 1
-					wc++
+					numWin++
+					numIv++
 				}
 			} else {                             // open new
 				iv = NewInterval(i.Chr, i.Start, i.End, i.Cm, "", i.Sym)
 				open = true
 				n = 1
-				wc++
+				numWin++
+				numIv++
 			}
 		} else {
 			if open && i.Start > iv.End {        // close
@@ -63,8 +62,9 @@ func MergeCmplx(cmplx []Interval, args Args) ([]Interval, int, int) {
 			} 
 		}
 	}
-	sc = symCount(co)
-	return co, wc, sc
+	numSym = symCount(co)
+
+	return co, numWin, numIv, numSym
 }
 
 func symCount(co []Interval) int {

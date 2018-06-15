@@ -11,10 +11,10 @@ import (
 
 func runAnalysis(cmplx []mau.Interval, symGO mau.SymGO, args mau.Args) {
 	var str []string
-	co, w, g := mau.MergeCmplx(cmplx, args)
+	co, numWin, numIv, obsNumSym := mau.MergeCmplx(cmplx, args)
 	if args.Cm == "annotate" {
-		e, p := mau.GeneEnr(cmplx, w, g, args)
-		mau.PrintIntervalSym(co, w, g, e, p)
+		expNumSym, p := mau.GeneEnr(cmplx, numWin, obsNumSym, args)
+		mau.PrintIntervalSym(co, numWin, numIv, obsNumSym, expNumSym, p)
 	}
 	if args.Cm == "enrichment" {
 		uniqSym := make(map[string]bool)
@@ -22,7 +22,7 @@ func runAnalysis(cmplx []mau.Interval, symGO mau.SymGO, args mau.Args) {
 			for k, _ := range iv.Sym { uniqSym[k] = true }
 		}
 		obsGOcount := mau.GOcount(uniqSym, symGO)
-		expGOcount, pVal := mau.FuncEnr(cmplx, symGO, g, obsGOcount, args)
+		expGOcount, pVal := mau.FuncEnr(cmplx, symGO, obsNumSym, obsGOcount, args)
 		for k, _ := range obsGOcount {
 			str = append(str, k)
 		}
@@ -55,9 +55,8 @@ func main() {
 	var symGO    mau.SymGO
 	var args mau.Args
 	var cmplx []mau.Interval
-	version := "0.1"
 	
-	args = mau.GetArgs(progname(os.Args[0]), version)
+	args = mau.GetArgs()
 	if args.Cm == "quantile" {
 		mau.Quantile(args)
 		os.Exit(0)

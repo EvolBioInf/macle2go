@@ -48,10 +48,10 @@ func SortStringSet(sm map[string]bool) []string {
 	return str
 }
 
-func PrintIntervalSym(iv []Interval, w, o int, e float64, p float64) {
+func PrintIntervalSym(iv []Interval, w, i, o int, e float64, p float64) {
 	first := true
-	fmt.Printf("# W\tO\tE\tO/E\tP\n")
-	fmt.Printf("# %d\t%d\t%.2f\t%.2f\t%v\n", w, o, e, float64(o)/e, p)
+	fmt.Printf("# W\tI\tO\tE\tO/E\tP\n")
+	fmt.Printf("# %d\t%d\t%d\t%.2f\t%.2f\t%v\n", w, i, o, e, float64(o)/e, p)
 	fmt.Printf("# Chr\tStart\tEnd\tLen\tC_M\tSym\n")
 	for _, i := range iv {
 		fmt.Printf("%s\t%d\t%d\t%v\t%.4f", i.Chr, i.Start, i.End, i.End - i.Start + 1, i.Cm)
