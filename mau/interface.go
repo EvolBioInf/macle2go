@@ -6,7 +6,10 @@ import (
 	"os"
 )
 
-var progStr, verStr string
+const (
+	progStr = "macle2go"
+	verStr = "0.1"
+)
 
 type Args struct {
 	// Arguments for quantile
@@ -97,15 +100,13 @@ func version() {
 	os.Exit(2)
 }
 
-func GetArgs(prog, vers string) Args {
+func GetArgs() Args {
 	var a Args
 
 	qc := flag.NewFlagSet("quantile",   flag.ExitOnError)
 	ac := flag.NewFlagSet("annotate",   flag.ExitOnError)
 	ec := flag.NewFlagSet("enrichment", flag.ExitOnError) 
 
-	progStr = prog
-	verStr  = vers
 	// Flags for quantile
 	qc.Float64Var(&a.Qg, "g", 0, "gc-content")
 	qc.Float64Var(&a.Ql, "l", 0, "genome length")
@@ -140,27 +141,26 @@ func GetArgs(prog, vers string) Args {
 	if len(os.Args) == 1 {
 		usage()
 	}
-
+	flag.Usage = usage
+	flag.Parse()
 	switch os.Args[1] {
 	case "quantile":
-		qc.Parse(os.Args[1:])
 		qc.Usage = quantileUsage
+		qc.Parse(os.Args[2:])
 		a.Cm = "quantile"
 	case "annotate":
-		ac.Parse(os.Args[1:])
 		ac.Usage = annotateUsage
+		ac.Parse(os.Args[2:])
 		a.Files = ac.Args()
 		a.Cm = "annotate"
 	case "enrichment":
-		ec.Parse(os.Args[1:])
 		ec.Usage = enrichmentUsage
+		ec.Parse(os.Args[2:])
 		a.Files = ec.Args()
 		a.Cm = "enrichment"
 	case "version":
 		version()
 	default:
-		flag.Usage = usage
-		flag.Parse()
 		fmt.Printf("%q is not a valid command.\n", os.Args[1])
 		os.Exit(2)
 	}
