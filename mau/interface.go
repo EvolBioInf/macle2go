@@ -45,7 +45,7 @@ func usage() {
 
 func quantileUsage() {
 	fmt.Printf("Usage: %s quantile options\n", progStr)
-	fmt.Printf("Example: %s quantile -l 2937655681 -g 0.408679 -w 10000 -p 0.05\n", progStr)
+	fmt.Printf("Example: %s quantile -l 2937655681 -g 0.408679 -w 20000 -p 0.05\n", progStr)
 	fmt.Printf("Options:\n")
 	fmt.Printf("\t-g <NUM> gc-content\n")
 	fmt.Printf("\t-l <NUM> genome length\n")
@@ -143,32 +143,24 @@ func GetArgs(prog, vers string) Args {
 
 	switch os.Args[1] {
 	case "quantile":
-		qc.Parse(os.Args[2:])
+		qc.Parse(os.Args[1:])
 		qc.Usage = quantileUsage
 		a.Cm = "quantile"
 	case "annotate":
-		ac.Parse(os.Args[2:])
+		ac.Parse(os.Args[1:])
 		ac.Usage = annotateUsage
 		a.Files = ac.Args()
 		a.Cm = "annotate"
 	case "enrichment":
-		ec.Parse(os.Args[2:])
+		ec.Parse(os.Args[1:])
 		ec.Usage = enrichmentUsage
 		a.Files = ec.Args()
 		a.Cm = "enrichment"
-	case "-h":
-		usage()
-	case "-help":
-		usage()
-	case "--help":
-		usage()
 	case "version":
 		version()
-	case "-v":
-		version()
-	case "--version":
-		version()
 	default:
+		flag.Usage = usage
+		flag.Parse()
 		fmt.Printf("%q is not a valid command.\n", os.Args[1])
 		os.Exit(2)
 	}
