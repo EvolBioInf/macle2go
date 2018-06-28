@@ -28,13 +28,15 @@ func runAnalysis(cmplx []mau.Interval, symGO mau.SymGO, args mau.Args) {
 		}
 		sort.Strings(str)
 		gd := mau.GOdescr()
+		gc := mau.GOcat()
 		for _, g := range str {
 			d := gd[g]
 			d = strings.Replace(d, " ", "_", -1)
 			if obsGOcount[g] >= args.M {
+				c := gc[g]
 				o := obsGOcount[g]
 				e := expGOcount[g]
-				fmt.Printf("%s\t%d\t%.2f\t%.2f\t%.2e\t%s\n", g, o, e, float64(o)/e, pVal[g], d)
+				fmt.Printf("%s\t%d\t%.2f\t%.2f\t%.2e\t%s\t%s\n", g, o, e, float64(o)/e, pVal[g], c, d)
 			}
 		}
 	}

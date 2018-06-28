@@ -14,6 +14,8 @@ type GO    map[string]bool
 type SymGO map[string]GO
 type GidGO map[int]GO
 
+var goCat  map[string]string
+
 // getGeneSym reads a geneInfo file and returns a map of gene ids and gene symbols.
 func getGeneSym(file *os.File) map[int]string {
 	var str1, str2 []string
@@ -62,6 +64,7 @@ func getGidGO(file *os.File) GidGO {
 	// Allocate memory
 	gidGO = make(GidGO)
 	goDescr = make(map[string]string)
+	goCat   = make(map[string]string)
 	// Iterate over lines
 	for _, s := range str1 {
 		// Skip empty lines and commend lines
@@ -83,6 +86,7 @@ func getGidGO(file *os.File) GidGO {
 		}
 		goAcc[str2[2]] = true
 		goDescr[str2[2]] = str2[5]
+		goCat[str2[2]]   = str2[7]
 	}
 	return gidGO
 }
@@ -96,6 +100,10 @@ func GOdescr() map[string]string {
 	}
 
 	return goDescr
+}
+
+func GOcat() map[string]string {
+	return goCat
 }
 
 // GetSymGO takes as input a gene-info file and a gene2go file and returns a map of gene symbols and sets of GO-accessions.
