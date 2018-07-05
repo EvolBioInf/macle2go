@@ -5,6 +5,12 @@ import (
 	"time"
 )
 
+type Result struct {
+	E float64
+	P float64
+	N int
+}
+
 func GOcount(uniqSym map[string]bool, symGO SymGO) map[string]int {
 	var goCount map[string]int
 
@@ -19,11 +25,11 @@ func GOcount(uniqSym map[string]bool, symGO SymGO) map[string]int {
 	return goCount
 }
 
-func seedRand(args Args) *rand.Rand {
+func seedRand(seed int) *rand.Rand {
 	var r *rand.Rand
 
-	if args.S != 0 {
-		r = rand.New(rand.NewSource(int64(args.S)))
+	if seed != 0 {
+		r = rand.New(rand.NewSource(int64(seed)))
 	} else {
 		r = rand.New(rand.NewSource(time.Now().UnixNano()))
 	}
@@ -31,15 +37,16 @@ func seedRand(args Args) *rand.Rand {
 	return r
 }
 
-func GeneEnr(cmplx []Interval, nWin, nGene int, args Args ) (float64, float64) {
+func GeneEnr(cmplx []Interval, nWin, nGene, it, seed int) Result {
 	var p float64 
 	var r *rand.Rand
+	var res Result
 
-	r = seedRand(args)
+	r = seedRand(seed)
 	n := len(cmplx)
 	nSym := 0
 
-	for i := 0; i < args.II; i++ {
+	for i := 0; i < it; i++ {
 		sym := make(map[string]bool)
 		for j := 0; j < nWin; j++ {
 			x := r.Intn(n)
@@ -50,14 +57,11 @@ func GeneEnr(cmplx []Interval, nWin, nGene int, args Args ) (float64, float64) {
 		nSym += len(sym)
 		if len(sym) >= nGene { p++ }
 	}
-	if p > 0 {
-		p /= float64(args.II)
-	} else {
-		p = -1.0 / float64(args.II)
-	}
-	e := float64(nSym) / float64(args.II)
-
-	return e, p
+	res.P = p
+	res.E = float64(nSym)
+	res.N = it
+	
+	return res
 }
 
 func FuncEnr(cmplx []Interval, symGO SymGO, nGene int, obsGOcount map[string]int, args Args) (map[string]float64, map[string]float64) {
@@ -65,7 +69,7 @@ func FuncEnr(cmplx []Interval, symGO SymGO, nGene int, obsGOcount map[string]int
 	var pVal       = make(map[string]float64)
 	var r *rand.Rand
 
-	r = seedRand(args)
+	r = seedRand(args.S)
 	n := len(cmplx)
 
 	for i := 0; i < args.II; i++ {

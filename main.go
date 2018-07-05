@@ -5,16 +5,62 @@ import (
 	"os"
 	"sort"
 	"strings"
-
+	"runtime"
+	"math"
 	"github.com/evolbioinf/macle2go/mau"
 )
 
+func summarizeRes(res []mau.Result) mau.Result {
+	var re mau.Result
+	
+	for _, r := range res {
+		re.N += r.N
+		re.P += r.P
+		re.E += r.E
+	}
+	if re.P == 0 {
+		re.P = -1. / float64(re.N)
+	} else {
+		re.P /= float64(re.N)
+	}
+	if re.E == 0 {
+		re.E = -1. / float64(re.N)
+	} else {
+		re.E /= float64(re.N)
+	}
+
+	return re
+}
+
 func runAnalysis(cmplx []mau.Interval, symGO mau.SymGO, args mau.Args) {
 	var str []string
+	var res []mau.Result
+	var s int
+
 	co, numWin, numIv, obsNumSym := mau.MergeCmplx(cmplx, args)
+	c := 0
+	step := int(math.Ceil(float64(args.II) / float64(runtime.NumCPU())))
+	ch := make(chan bool)
 	if args.Cm == "annotate" {
-		expNumSym, p := mau.GeneEnr(cmplx, numWin, obsNumSym, args)
-		mau.PrintIntervalSym(co, numWin, numIv, obsNumSym, expNumSym, p)
+		for i := 0; i < args.II; i += step {
+			c++
+			if i + step < args.II {
+				s = step
+			} else {
+				s = args.II - i
+			}
+			go func(s int) {
+				r := mau.GeneEnr(cmplx, numWin, obsNumSym, s, args.S)
+				res = append(res, r)
+				ch <- true
+			}(s)
+		}
+		// Make sure all threads have returned
+		for i := 0; i < c; i++ {
+			<-ch
+		}
+		r := summarizeRes(res)
+		mau.PrintIntervalSym(co, numWin, numIv, obsNumSym, r.E, r.P)
 	}
 	if args.Cm == "enrichment" {
 		uniqSym := make(map[string]bool)
