@@ -5,7 +5,13 @@ import (
 	"time"
 )
 
-type Result struct {
+type EnrRes struct {
+	E map[string]float64
+	P map[string]float64
+	N int
+}
+
+type AnnRes struct {
 	E float64
 	P float64
 	N int
@@ -37,10 +43,10 @@ func seedRand(seed int) *rand.Rand {
 	return r
 }
 
-func GeneEnr(cmplx []Interval, nWin, nGene, it, seed int) Result {
+func GeneEnr(cmplx []Interval, nWin, nGene, it, seed int) AnnRes {
 	var p float64 
 	var r *rand.Rand
-	var res Result
+	var res AnnRes
 
 	r = seedRand(seed)
 	n := len(cmplx)
@@ -64,15 +70,16 @@ func GeneEnr(cmplx []Interval, nWin, nGene, it, seed int) Result {
 	return res
 }
 
-func FuncEnr(cmplx []Interval, symGO SymGO, nGene int, obsGOcount map[string]int, args Args) (map[string]float64, map[string]float64) {
+func FuncEnr(cmplx []Interval, symGO SymGO, nGene int, obsGOcount map[string]int, it, seed int) (EnrRes) {
 	var expGOcount = make(map[string]float64)
 	var pVal       = make(map[string]float64)
 	var r *rand.Rand
+	var er EnrRes
 
-	r = seedRand(args.S)
+	r = seedRand(seed)
 	n := len(cmplx)
 
-	for i := 0; i < args.II; i++ {
+	for i := 0; i < it; i++ {
 		sym := make(map[string]bool)
 		for ; len(sym) < nGene; {
 			x := r.Intn(n)
@@ -87,13 +94,9 @@ func FuncEnr(cmplx []Interval, symGO SymGO, nGene int, obsGOcount map[string]int
 		}
 		
 	}
-	for g := range obsGOcount {
-		expGOcount[g] /= float64(args.II)
-		if pVal[g] > 0 {
-			pVal[g] /= float64(args.II)
-		} else {
-			pVal[g] = -1.0 / float64(args.II)
-		}
-	}
-	return expGOcount, pVal
+	er.P = pVal
+	er.E = expGOcount
+	er.N = it
+
+	return er
 }

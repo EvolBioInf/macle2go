@@ -10,8 +10,8 @@ import (
 	"github.com/evolbioinf/macle2go/mau"
 )
 
-func summarizeRes(res []mau.Result) mau.Result {
-	var re mau.Result
+func sumAnnRes(res []mau.AnnRes) mau.AnnRes {
+	var re mau.AnnRes
 	
 	for _, r := range res {
 		re.N += r.N
@@ -32,10 +32,35 @@ func summarizeRes(res []mau.Result) mau.Result {
 	return re
 }
 
+func sumEnrRes(res []mau.EnrRes) mau.EnrRes {
+	var re mau.EnrRes
+	
+	re.E = make(map[string]float64)
+	re.P = make(map[string]float64)
+	for _, r := range res {
+		for k, v := range r.E {
+			re.E[k] += v
+			re.P[k] += r.P[k]
+		}
+		re.N += r.N
+	}
+	for k, v := range re.E {
+		re.E[k] = v / float64(re.N)
+		if re.P[k] > 0 {
+			re.P[k] = re.P[k] / float64(re.N)
+		} else {
+			re.P[k] = -1. / float64(re.N)
+		}
+	}
+
+	return re
+}
+
 func runAnalysis(cmplx []mau.Interval, symGO mau.SymGO, args mau.Args) {
 	var str []string
-	var res []mau.Result
-	var s int
+	var ar  []mau.AnnRes
+	var er  []mau.EnrRes
+	var s   int
 
 	co, numWin, numIv, obsNumSym := mau.MergeCmplx(cmplx, args)
 	c := 0
@@ -51,7 +76,7 @@ func runAnalysis(cmplx []mau.Interval, symGO mau.SymGO, args mau.Args) {
 			}
 			go func(s int) {
 				r := mau.GeneEnr(cmplx, numWin, obsNumSym, s, args.S)
-				res = append(res, r)
+				ar = append(ar, r)
 				ch <- true
 			}(s)
 		}
@@ -59,7 +84,7 @@ func runAnalysis(cmplx []mau.Interval, symGO mau.SymGO, args mau.Args) {
 		for i := 0; i < c; i++ {
 			<-ch
 		}
-		r := summarizeRes(res)
+		r := sumAnnRes(ar)
 		mau.PrintIntervalSym(co, numWin, numIv, obsNumSym, r.E, r.P)
 	}
 	if args.Cm == "enrichment" {
@@ -68,7 +93,27 @@ func runAnalysis(cmplx []mau.Interval, symGO mau.SymGO, args mau.Args) {
 			for k, _ := range iv.Sym { uniqSym[k] = true }
 		}
 		obsGOcount := mau.GOcount(uniqSym, symGO)
-		expGOcount, pVal := mau.FuncEnr(cmplx, symGO, obsNumSym, obsGOcount, args)
+		c := 0
+		step := int(math.Ceil(float64(args.II) / float64(runtime.NumCPU())))
+		ch := make(chan bool)
+		for i := 0; i < args.II; i += step {
+			c++
+			if i + step < args.II {
+				s = step
+			} else {
+				s = args.II - i
+			}
+			go func(s int) {
+				r := mau.FuncEnr(cmplx, symGO, obsNumSym, obsGOcount, s, args.S)
+				er = append(er, r)
+				ch <- true
+			}(s)
+		}
+		// Make sure all threads have returned
+		for i := 0; i < c; i++ {
+			<-ch
+		}
+		ere := sumEnrRes(er)
 		for k, _ := range obsGOcount {
 			str = append(str, k)
 		}
@@ -81,8 +126,9 @@ func runAnalysis(cmplx []mau.Interval, symGO mau.SymGO, args mau.Args) {
 			if obsGOcount[g] >= args.M {
 				c := gc[g]
 				o := obsGOcount[g]
-				e := expGOcount[g]
-				fmt.Printf("%s\t%d\t%.2f\t%.2f\t%.2e\t%s\t%s\n", g, o, e, float64(o)/e, pVal[g], c, d)
+				e := ere.E[g]
+				p := ere.P[g]
+				fmt.Printf("%s\t%d\t%.2f\t%.2f\t%.2e\t%s\t%s\n", g, o, e, float64(o)/e, p, c, d)
 			}
 		}
 	}
