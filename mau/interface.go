@@ -7,8 +7,13 @@ import (
 )
 
 const (
-	progStr = "macle2go"
-	verStr = "0.1"
+	progStr     = "macle2go"
+	verStr      = "0.1"
+	defWin      = 10000
+	defIt       = 10000
+	defUpstr    = 5000
+	defDownstr  = 5000
+	defMinGenes = 10
 )
 
 type Args struct {
@@ -65,10 +70,10 @@ func annotateUsage() {
 	fmt.Printf("\t-w <NUM> window length\n")
 	fmt.Printf("\t-c <NUM>  minimum complexity\n")
 	fmt.Printf("\t[-C <NUM> maximum complexity; default: no upper limit]\n")
-	fmt.Printf("\t[-I <NUM> iterations; default: %d]\n", 10000)
+	fmt.Printf("\t[-I <NUM> iterations; default: %d]\n", defIt)
 	fmt.Printf("\t[-s <NUM> seed for random number generator; default: system-generated]\n")
-	fmt.Printf("\t[-u <NUM> upstream promoter region; default: 1000]\n")
-	fmt.Printf("\t[-d <NUM> downstream promoter region; default: 1000]\n")
+	fmt.Printf("\t[-u <NUM> upstream promoter region; default: %d]\n", defUpstr)
+	fmt.Printf("\t[-d <NUM> downstream promoter region; default: %d]\n", defDownstr)
 	fmt.Printf("\t[-G consider whole genes; default: promoter]\n")
 	os.Exit(2)
 }
@@ -83,11 +88,11 @@ func enrichmentUsage() {
 	fmt.Printf("\t-c <NUM>  minimum complexity\n")
 	fmt.Printf("\t-w <NUM>  window length\n")
 	fmt.Printf("\t[-C <NUM>  maximum complexity; default: no upper limit]\n")
-	fmt.Printf("\t[-I <NUM> iterations; default: %d]\n", 10000)
-	fmt.Printf("\t[-m <NUM>  minimum number of genes per GO-category; default: %d]\n", 10)
+	fmt.Printf("\t[-I <NUM> iterations; default: %d]\n", defIt)
+	fmt.Printf("\t[-m <NUM>  minimum number of genes per GO-category; default: %d]\n", defMinGenes)
 	fmt.Printf("\t[-s <NUM> seed for random number generator; default: system-generated]\n")
-	fmt.Printf("\t[-u <NUM> upstream promoter region; default: 1000]\n")
-	fmt.Printf("\t[-d <NUM> downstream promoter region; default: 1000]\n")
+	fmt.Printf("\t[-u <NUM> upstream promoter region; default: %d]\n", defUpstr)
+	fmt.Printf("\t[-d <NUM> downstream promoter region; default: %d]\n", defDownstr)
 	fmt.Printf("\t[-G analyze whole genes; default: promoter]\n")
 	os.Exit(2)
 }
