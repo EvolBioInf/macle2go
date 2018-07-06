@@ -53,7 +53,7 @@ func usage() {
 
 func quantileUsage() {
 	fmt.Printf("Usage: %s quantile options\n", progStr)
-	fmt.Printf("Example: %s quantile -l 2937655681 -g 0.408679 -w 20000 -p 0.05\n", progStr)
+	fmt.Printf("Example: %s quantile -l 2937655681 -g 0.408679 -w 10000 -p 0.05\n", progStr)
 	fmt.Printf("Options:\n")
 	fmt.Printf("\t-g <NUM> gc-content\n")
 	fmt.Printf("\t-l <NUM> genome length\n")
