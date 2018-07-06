@@ -37,6 +37,7 @@ type Args struct {
 	Pu int      // promoter upstream
 	Pd int      // promoter downstream
 	Cm string   // command
+	O  string   // write GO terms and observed symbols to file o
 	
 	Files []string
 }
@@ -93,6 +94,7 @@ func enrichmentUsage() {
 	fmt.Printf("\t[-s <NUM> seed for random number generator; default: system-generated]\n")
 	fmt.Printf("\t[-u <NUM> upstream promoter region; default: %d]\n", defUpstr)
 	fmt.Printf("\t[-d <NUM> downstream promoter region; default: %d]\n", defDownstr)
+	fmt.Printf("\t[-o <FILE> print GO-terms and corresponding genes to file]\n")
 	fmt.Printf("\t[-G analyze whole genes; default: promoter]\n")
 	os.Exit(2)
 }
@@ -141,6 +143,7 @@ func GetArgs() Args {
 	ec.IntVar(    &a.S, "s", 0,  "seed for random number generator")
 	ec.IntVar(    &a.Pu, "u", 1000, "upstream promoter region")
 	ec.IntVar(    &a.Pd, "d", 1000, "downstream promoter region")
+	ec.StringVar( &a.O, "o", "",     "file for GO/sym information")
 	ec.BoolVar(   &a.GG, "G", false, "analyze whole genes; default: promoters")
 
 	if len(os.Args) == 1 {

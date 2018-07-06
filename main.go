@@ -5,9 +5,44 @@ import (
 	"os"
 	"sort"
 	"strings"
-
+	"bufio"
+	
 	"github.com/evolbioinf/macle2go/mau"
 )
+
+func printGOsym(fileName string, uniqSym map[string]bool, symGO mau.SymGO, args mau.Args) {
+	var str []string
+	var go2sy map[string][]string
+
+	go2sy = make(map[string][]string)
+	for s, _ := range uniqSym {
+		gg := symGO[s]
+		for g, _ := range gg {
+			go2sy[g] = append(go2sy[g], s)
+		}
+	}
+	for g, _ := range go2sy {
+		str = append(str, g)
+		sort.Strings(go2sy[g])
+	}
+	
+	sort.Strings(str)
+	f, err := os.Create(fileName)
+	mau.Check(err)
+	defer f.Close()
+	w := bufio.NewWriter(f)
+	for _, g := range str {
+		l := len(go2sy[g])
+		if l >= args.M {
+			fmt.Fprintf(w, "%s\t%d\t", g, len(go2sy[g]))
+			for _, s := range go2sy[g] {
+				fmt.Fprintf(w, " %s", s)
+			}
+			fmt.Fprintf(w, "\n")
+		}
+	}
+	w.Flush()
+}
 
 func runAnalysis(cmplx []mau.Interval, symGO mau.SymGO, args mau.Args) {
 	var str []string
@@ -21,6 +56,9 @@ func runAnalysis(cmplx []mau.Interval, symGO mau.SymGO, args mau.Args) {
 		uniqSym := make(map[string]bool)
 		for _, iv := range co {
 			for k, _ := range iv.Sym { uniqSym[k] = true }
+		}
+		if args.O != "" {
+			printGOsym(args.O, uniqSym, symGO, args)
 		}
 		obsGOcount := mau.GOcount(uniqSym, symGO)
 		ere := mau.FunEnr(cmplx, symGO, obsNumSym, obsGOcount, args)
