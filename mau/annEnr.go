@@ -12,6 +12,52 @@ type AnnRes struct {
 	N int
 }
 
+func logBinom(n, k int64) float64 {
+	x1, _ := math.Lgamma(float64(n + 1))
+	x2, _ := math.Lgamma(float64(k + 1))
+	x3, _ := math.Lgamma(float64(n - k + 1))
+	x := x1 - x2 - x3
+	
+	return x
+}
+
+// AnnCon computes the contingency of symbol annotations
+func AnnCon(cmplx []Interval, args Args) (int64, int64, int64, int64, float64)  {
+	var a int64 //  hiCm /  sym
+	var b int64 //  hiCm / !sym
+	var c int64 // !hiCm /  sym
+	var d int64 // !hiCm / !sym
+	var n int64
+	var co, sy bool
+
+	for _, i := range cmplx {
+		if i.Cm >= args.C {
+			co = true
+		} else {
+			co = false
+		}
+		if len(i.Sym) > 0 {
+			sy = true
+		} else {
+			sy = false
+		}
+		if co && sy {
+			a++
+		} else if co && !sy {
+			b++
+		} else if !co && sy {
+			c++
+		} else if !co && !sy {
+			d++
+		}
+		
+	}
+	n = a + b + c + d
+	p := logBinom(a + b, a) + logBinom(c + d, c) - logBinom(n, a + c)
+	
+	return a, b, c, d, math.Exp(p)
+}
+
 func sumAnnRes(res []AnnRes) AnnRes {
 	var re AnnRes
 	

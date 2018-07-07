@@ -49,6 +49,11 @@ func runAnalysis(cmplx []mau.Interval, symGO mau.SymGO, args mau.Args) {
 
 	co, numWin, numIv, obsNumSym := mau.MergeCmplx(cmplx, args)
 	if args.Cm == "annotate" {
+		a, b, c, d, p := mau.AnnCon(cmplx, args)
+		fmt.Printf("#\tprom\t!prom\n")
+		fmt.Printf("# compl\t%d\t%d\n", a, b)
+		fmt.Printf("#!compl\t%d\t%d\n", c, d)
+		fmt.Printf("#P: %.3e\n", p)
 		r := mau.AnnEnr(cmplx, numWin, obsNumSym, args)
 		mau.PrintIntervalSym(co, numWin, numIv, obsNumSym, r.E, r.P)
 	}
