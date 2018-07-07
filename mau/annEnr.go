@@ -21,7 +21,14 @@ func logBinom(n, k int64) float64 {
 	return x
 }
 
-// AnnCon computes the contingency of symbol annotations
+// AnnCon computes the entries in the following contingency table
+//
+//                   promoter  !promoter
+//  high complexity     a          b
+// !high complexity     c          d
+//
+// and the significance of the null hypothesis that complexity has
+// no effect on promoter presence/absence.
 func AnnCon(cmplx []Interval, args Args) (int64, int64, int64, int64, float64)  {
 	var a int64 //  hiCm /  sym
 	var b int64 //  hiCm / !sym
