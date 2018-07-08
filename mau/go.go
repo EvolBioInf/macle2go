@@ -134,3 +134,16 @@ func GetSymGO(infoFile, ggFile string) SymGO {
 	return symGO
 }
 
+// CountGO counts the total number of symbols per GO-accession
+func CountGO(symGO SymGO) map[string]int {
+
+	cg := make(map[string]int)
+	
+	for _, gg := range symGO {
+		for g, _ := range gg {
+			cg[g]++
+		}
+	}
+
+	return cg
+}

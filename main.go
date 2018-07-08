@@ -15,6 +15,7 @@ func printGOsym(fileName string, uniqSym map[string]bool, symGO mau.SymGO, args 
 	var go2sy map[string][]string
 
 	go2sy = make(map[string][]string)
+	gc := mau.CountGO(symGO)
 	for s, _ := range uniqSym {
 		gg := symGO[s]
 		for g, _ := range gg {
@@ -34,7 +35,7 @@ func printGOsym(fileName string, uniqSym map[string]bool, symGO mau.SymGO, args 
 	for _, g := range str {
 		l := len(go2sy[g])
 		if l >= args.M {
-			fmt.Fprintf(w, "%s\t%d\t", g, len(go2sy[g]))
+			fmt.Fprintf(w, "%s\t%d\t%d", g, gc[g], len(go2sy[g]))
 			for _, s := range go2sy[g] {
 				fmt.Fprintf(w, " %s", s)
 			}
