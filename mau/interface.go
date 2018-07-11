@@ -11,8 +11,8 @@ const (
 	verStr      = "0.1"
 	defWin      = 10000
 	defIt       = 10000
-	defUpstr    = 5000
-	defDownstr  = 5000
+	defUpstr    = 2000
+	defDownstr  = 2000
 	defMinGenes = 10
 )
 
