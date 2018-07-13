@@ -248,7 +248,8 @@ func quant(g, l, w, p float64) (float64, float64) {
 	l *= 2  // forward & reverse strand
 	m := mean(g, l)
 	v := variance(g, l)
-	v = v * w / m / (w - 2 * m) / (w - 2 * m)
+//	v = v * w / m / (w - 2 * m) / (w - 2 * m) // exact
+	v = v / m / w                             // approximate, ignoring C_i
 	s := math.Sqrt(v)
 	q := 1 + s * math.Sqrt(2) * math.Erfinv(2 * p - 1)
 	return q, gauss(m, s, q)
@@ -261,7 +262,9 @@ func gauss(a, s, x float64) float64 {
 }
 
 func Quantile(a Args) {
-	q, f := quant(a.Qg, a.Ql, a.Qw, a.Qp)
+	var q, f float64
+
+	q, f = quant(a.Qg, a.Ql, a.Qw, a.Qp)
 	fmt.Printf("#SeqLen\tWinLen\tP\tQ\tF(Q)\n")
 	fmt.Printf("%v\t%v\t%v\t%v\t%v\n", a.Ql, a.Qw, a.Qp, q, f)
 }
