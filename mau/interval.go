@@ -7,6 +7,7 @@ package mau
 import (
 	"fmt"
 	"sort"
+	"math"
 )
 
 type Interval struct {
@@ -38,6 +39,17 @@ func (p IntervalSlice) Less(i, j int) bool { return p[i].Start < p[j].Start }
 func (p IntervalSlice) Swap(i, j int)      { p[i], p[j] = p[j], p[i] }
 type ChrInterval map[string]IntervalSlice
 
+// Round to n-th digit, for example,
+// round(6.555, 1) -> 6.6
+// round(6.555, 2) -> 6.56
+// round(6.555, 0) -> 7
+func round(x float64, n int) float64 {
+	p := math.Pow10(n)
+	f := x * p
+	f = math.Round(f) / p
+	return f
+}
+
 // SortStringSet takes a map of strings to bools and returns a sorted slice of the keys
 func SortStringSet(sm map[string]bool) []string {
 	var str []string
@@ -51,10 +63,10 @@ func SortStringSet(sm map[string]bool) []string {
 func PrintIntervalSym(iv []Interval, w, i, o int, e float64, p float64) {
 	first := true
 	fmt.Printf("# W\tI\tO\tE\tO/E\tP\n")
-	fmt.Printf("# %d\t%d\t%d\t%.2f\t%.2f\t%v\n", w, i, o, e, float64(o)/e, p)
+	fmt.Printf("# %d\t%d\t%d\t%.2f\t%.2f\t%v\n", w, i, o, round(e, 2), round(float64(o)/e, 2), p)
 	fmt.Printf("# Chr\tStart\tEnd\tLen\tC_M\tSym\n")
 	for _, i := range iv {
-		fmt.Printf("%s\t%d\t%d\t%v\t%.4f", i.Chr, i.Start, i.End, i.End - i.Start + 1, i.Cm)
+		fmt.Printf("%s\t%d\t%d\t%v\t%.4f", i.Chr, i.Start, i.End, i.End - i.Start + 1, round(i.Cm, 4))
 		sy := SortStringSet(i.Sym)
 		first = true
 		for _, s := range(sy) {  // symbols
