@@ -1,12 +1,12 @@
-export VERSION = $(shell bash ../scripts/version.sh) # The single, trailing blank is essential
-export DATE    = $(shell bash ../scripts/date.sh) #    The single, trailing blank is essential
+version = $(shell bash ../scripts/version.sh)
+date    = $(shell bash ../scripts/date.sh)
 
 exe = markMacle
 all: tangle weave
 
 tangle: $(exe)
 $(exe): $(exe).go
-	go build -ldflags "-X github.com/evolbioinf/macle2go/markMacle.version=$(VERSION) -X github.com/evolbioinf/macle2go/markMacle.date=$(DATE)" $(exe).go
+	go build -ldflags "-X main.version=$(version) -X main.date=$(date)" $(exe).go
 $(exe).go: $(exe).org
 	bash ../scripts/org2nw $(exe).org | notangle -R$(exe).go | gofmt > $(exe).go
 test: $(exe) $(exe)_test.go
