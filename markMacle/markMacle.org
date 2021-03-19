@@ -1,0 +1,417 @@
+#+begin_src latex
+  \section*{Introduction}
+  The program \ty{macle} computes the match complexity in sliding
+  windows across whole genomes. Its output consists of three columns,
+  chromosome, sliding window midpoint, and complexity. For example,
+  \begin{verbatim}
+  chr1	12500	0.0752
+  chr1	13000	0.0654
+  chr1	13500	0.0654
+  chr1	14000	0.0949
+  ...
+  \end{verbatim}
+
+  The program \ty{macle2go} takes this data and performs an enrichment
+  analysis on intervals with extreme complexity values. To generalize
+  this kind of analysis, it would be useful to mark specific regions in
+  \ty{macle} output and thus subject them to enrichment analysis. Since
+  \ty{macle2go} targets windows with complexity beyond some ``normal''
+  range, we are looking for a way to set the complexity values of
+  certain windows. The program \ty{markMacle} implements this. It takes
+  as input a set of intervals and a \ty{macle} results file. The
+  intervals also come in three columns delimited by white space. They
+  hold, chromosome, start and end, for example,
+  \begin{verbatim}
+  chr11   100536501       100546500
+  chr11   100890001       100902000
+  chr11   101232001       101245000
+  chr11   1017001         1028000
+  ...
+  \end{verbatim}
+  The intervals can be in any order.
+  Any \ty{macle} window whose mid point falls into one of these
+  intervals gets its complexity value set to some artificial value that
+  never occurs in real data, like 2. All other \ty{macle} entries are
+  left unchanged.
+  \section*{Implementation}
+  The outline of \ty{markMacle} contains hooks for imports, types,
+  methods, variables, functions, and the logic of the main function.
+#+end_src
+#+begin_src go <<markMacle.go>>=
+  package main
+
+  import (
+	  //<<Imports>>
+  )
+  //<<Types>>
+  //<<Methods>>
+  //<<Variables>>
+  //<<Functions>>
+  func main() {
+	  //<<Main function>>
+  }
+#+end_src
+#+begin_src latex
+  In the main function we set the usage, declare and parse the options,
+  store the intervals, sort them, and iterate across the \ty{macle}
+  data.
+#+end_src
+#+begin_src go <<Main function>>=
+  //<<Set usage>>
+  //<<Declare options>>
+  //<<Parse options>>
+  //<<Store intervals>>
+  //<<Sort intervals>>
+  //<<Parse \ty{macle} data>>
+#+end_src
+#+begin_src latex
+  The usage consists of three parts. The actual usage message, an
+  explanation of the program's purpose, and an example command.
+#+end_src
+#+begin_src go <<Set usage>>=
+  u := "markMacle [-h] [options] intervals.txt [macle files]"
+  p := "Mark positions in macle output with given complexity value."
+  e := "markMacle intervals.txt macle.txt"
+  clio.Usage(u, p, e)
+#+end_src
+#+begin_src latex
+  We import \ty{clio}.
+#+end_src
+#+begin_src go <<Imports>>=
+  "github.com/evolbioinf/clio"
+#+end_src
+#+begin_src latex
+  We declare two options, the number used as the mark (\verb+-m+), and a
+  request for the program version (\verb+-v+).
+#+end_src
+#+begin_src go <<Declare options>>=
+  var optM = flag.Float64("m", 2.0, "complexity value for marking")
+  var optV = flag.Bool("v", false, "version")
+#+end_src
+#+begin_src latex
+  We import \ty{flag}.
+#+end_src
+#+begin_src go <<Imports>>=
+  "flag"
+#+end_src
+#+begin_src latex
+  We parse the two options. If the version is desired, we print it and
+  exit.
+#+end_src
+#+begin_src go <<Parse options>>=
+  flag.Parse()
+  if *optV {
+	  name := "markMacle"
+	  author := "Bernhard Haubold"
+	  email := "haubold@evolbio.mpg.de"
+	  license := "Gnu General Public License, " +
+		  "https://www.gnu.org/licenses/gpl.html"
+	  clio.PrintInfo(name, version, date, author, email, license)
+	  os.Exit(0)
+  }
+#+end_src
+#+begin_src latex
+  We import \ty{os}.
+#+end_src
+#+begin_src go <<Imports>>=
+  "os"
+#+end_src
+#+begin_src latex
+  The version and the date are injected at compile-time. Here we just
+  declare them.
+#+end_src
+#+begin_src go <<Variables>>=
+  var version, date string
+#+end_src
+#+begin_src latex
+  We declare a map of intervals, where the key is the chromosome name as
+  a string, and the value is a slice of intervals on that chromosome. We
+  also open the interval file, scan it, and close it again.
+#+end_src
+#+begin_src go <<Store intervals>>=
+  intervals := make(map[string][]interval)
+  files := flag.Args()
+  //<<Open interval file>>
+  //<<Scan interval file>>
+  //<<Close interval file>>
+#+end_src
+#+begin_src latex
+  An \ty{interval} consists of a start and an end.
+#+end_src
+#+begin_src go <<Types>>=
+  type interval struct {
+	  s, e int
+  }
+#+end_src
+#+begin_src latex
+  Before opening the interval file, we make sure, the user actually
+  passed one.
+#+end_src
+#+begin_src go <<Open interval file>>=
+  if len(files) < 1 {
+	  fmt.Fprintf(os.Stderr, "please provide an interval " +
+		  "file and a macle output file\n")
+	  os.Exit(1)
+  }
+  ifile, err := os.Open(files[0])
+  if err != nil {
+	  log.Fatalf("couldn't open %s", files[0])
+  }
+#+end_src
+#+begin_src latex
+  We import \ty{fmt} and \ty{log}.
+#+end_src
+#+begin_src go <<Imports>>=
+  "fmt"
+  "log"
+#+end_src
+#+begin_src latex
+  We scan the interval file and split each entry into chromosome, start,
+  and end.
+#+end_src
+#+begin_src go <<Scan interval file>>=
+  sc := bufio.NewScanner(ifile)
+  for sc.Scan() {
+	  fields := strings.Fields(sc.Text())
+	  c := fields[0]
+	  s, _ := strconv.Atoi(fields[1])
+	  e, _ := strconv.Atoi(fields[2])
+	  interval := interval { s: s, e: e }
+	  in := intervals[c]
+	  in = append(in, interval)
+	  intervals[c] = in
+  }
+#+end_src
+#+begin_src latex
+  We import \ty{bufio}, strings, and \ty{strconv}.
+#+end_src
+#+begin_src go <<Imports>>=
+  "bufio"
+  "strings"
+  "strconv"
+#+end_src
+#+begin_src latex
+  We iterate over the interval map and sort the intervals per
+  chromosome.
+#+end_src
+#+begin_src go <<Sort intervals>>=
+  for _, interval := range intervals {
+	  sort.Sort(iSlice(interval))
+  }
+#+end_src
+#+begin_src latex
+  We import \ty{sort},
+#+end_src
+#+begin_src go <<Imports>>=
+  "sort"
+#+end_src
+#+begin_src latex
+  declare an \ty{iSlice},
+#+end_src
+#+begin_src go <<Types>>=
+  type iSlice []interval
+#+end_src
+#+begin_src latex
+  and implement the methods of the \ty{Sort} interface.
+#+end_src
+#+begin_src go <<Methods>>=
+  func (s iSlice) Len() int { return len(s) }
+  func (s iSlice) Less(i, j int) bool { return s[i].s < s[j].s }
+  func (s iSlice) Swap(i, j int) { s[i], s[j] = s[j], s[i] }
+#+end_src
+#+begin_src latex
+  We have stored the intervals and close their file.
+#+end_src
+#+begin_src go <<Close interval file>>=
+  ifile.Close()
+#+end_src
+#+begin_src latex
+  With the intervals in hand, we turn to the \ty{macle} data. This is
+  located in the remaining files, which we parse with a function that
+  applies the function \ty{scan} to each of them. \ty{scan} has three
+  arguments, the data sink, and the marking complexity. Since \ty{macle}
+  files can be large, the data sink is a buffered reader rather than
+  just the standard out.
+#+end_src
+#+begin_src go <<Parse \ty{macle} data>>=
+  files = files[1:]
+  w := bufio.NewWriter(os.Stdout)
+  clio.ParseFiles(files, scan, intervals, w, *optM)
+  w.Flush()
+#+end_src
+#+begin_src latex
+  Inside \ty{scan}, we retrieve the arguments just passed. Then we ask
+  for each \ty{macle} entry whether it is located in one of the
+  intervals, and write it accordingly.
+#+end_src
+#+begin_src go <<Functions>>=
+  func scan(r io.Reader, args ...interface{}) {
+	  //<<Retrieve arguments>>
+	  sc := bufio.NewScanner(r)
+	  for sc.Scan() {
+		  //<<Read \ty{macle} entry>>
+		  //<<Locate \ty{macle} entry>>
+		  //<<Write \ty{macle} entry>>
+	  }
+  }
+#+end_src
+#+begin_src latex
+  We import \ty{io}.
+#+end_src
+#+begin_src go <<Imports>>=
+  "io"
+#+end_src
+#+begin_src latex
+  We retrieve the arguments of \ty{scan} through type assertion.
+#+end_src
+#+begin_src go <<Retrieve arguments>>=
+  intervals := args[0].(map[string][]interval)
+  w := args[1].(*bufio.Writer)
+  optM := args[2].(float64)
+#+end_src
+#+begin_src latex
+  We convert the \ty{macle} entry into chromosome and midpoint from the
+  first two columns. We don't need the actual complexity value in the
+  third column, so we ignore it.
+#+end_src
+#+begin_src go <<Read \ty{macle} entry>>=
+  line := sc.Text()
+  fields := strings.Fields(line)
+  ch := fields[0]
+  mi, err := strconv.Atoi(fields[1])
+  if err != nil {
+	  log.Fatalf("couldn't convert %s", fields[1])
+  }
+#+end_src
+#+begin_src latex
+  We locate the \ty{macle} entry in the chromosome slice of intervals
+  using a dedicated function.
+#+end_src
+#+begin_src go <<Locate \ty{macle} entry>>=
+  found := false
+  if intervals[ch] != nil {
+	  found = searchMidpoint(intervals[ch], mi)
+  }
+#+end_src
+#+begin_src latex
+  The function implements a binary search.
+#+end_src
+#+begin_src go <<Functions>>=
+  func searchMidpoint(iv []interval, m int) bool {
+	  //<<Binary search>>
+  }
+#+end_src
+#+begin_src latex
+  We implement the binary search as described in
+  \cite[p. 410]{knu98:ar3}. 
+#+end_src
+#+begin_src go <<Binary search>>=
+  l := 0
+  u := len(iv) - 1
+  for u >= l {
+	  i := (l+u) / 2
+	  if m >= iv[i].s && m <= iv[i].e { return true }
+	  if m < iv[i].s {
+		  u = i - 1
+	  } else {
+		  l = i + 1
+	  }
+  }
+  return false
+#+end_src
+#+begin_src latex
+  If the entry was found, we write it with the marking complexity value,
+  otherwise we leave it unchanged.
+#+end_src
+#+begin_src go <<Write \ty{macle} entry>>=
+  if found {
+	  line = fmt.Sprintf("%s\t%d\t%g", ch, mi, optM)
+  }
+  w.WriteString(line)
+  w.WriteByte('\n')
+#+end_src
+#+begin_src latex
+  The program is written, time to test it.
+  \section*{Testing}
+  The outline of the testing program has hooks for imports and the
+  logic of testing.
+#+end_src
+#+begin_src go <<markMacle_test.go>>=
+  package main
+
+  import (
+	  "testing"
+	  //<<Testing imports>>
+  )
+
+  func TestMarkMacle(t *testing.T) {
+	  //<<Testing>>
+  }
+#+end_src
+#+begin_src latex
+  We construct a set of test commands and a list of the files containing
+  the results we want. Then we run the tests.
+#+end_src
+#+begin_src go <<Testing>>=
+  var commands []*exec.Cmd
+  //<<Construct test commands>>
+  //<<Construct list of result files>>
+  for i, command := range commands {
+	  //<<Run test>>
+  }
+#+end_src
+#+begin_src latex
+  We import \ty{exec}.
+#+end_src
+#+begin_src go <<Testing imports>>=
+  "os/exec"
+#+end_src
+#+begin_src latex
+  We construct two test commands. One with defaults only, the other with
+  a different marking value.
+#+end_src
+#+begin_src go <<Construct test commands>>=
+  c := exec.Command("markMacle", "intervals.txt", "macle.txt")
+  commands = append(commands, c)
+  c = exec.Command("markMacle", "-m", "5", "intervals.txt", "macle.txt")
+  commands = append(commands, c)
+#+end_src
+#+begin_src latex
+  There is one result file per command.
+#+end_src
+#+begin_src go <<Construct list of result files>>=
+  var results []string
+  for i, _ := range commands {
+	  name := "r" + strconv.Itoa(i+1) + ".txt"
+	  results = append(results, name)
+  }
+#+end_src
+#+begin_src latex
+  We import \ty{strconv}.
+#+end_src
+#+begin_src go <<Testing imports>>=
+  "strconv"
+#+end_src
+#+begin_src latex
+  We run a test and compare what we get to what we want.
+#+end_src
+#+begin_src go <<Run test>>=
+  get, err := command.Output()
+  if err != nil {
+	  t.Errorf("couldn't run %s", command)
+  }
+  want, err := ioutil.ReadFile(results[i])
+  if err != nil {
+	  t.Errorf("couldn't open %s", results[i])
+  }
+  if !bytes.Equal(want, get) {
+	  t.Errorf("want:\n%s\nget:\n%s\n", want, get)
+  }
+#+end_src
+#+begin_src latex
+  We import \ty{ioutil} and \ty{bytes}.
+#+end_src
+#+begin_src go <<Testing imports>>=
+  "io/ioutil"
+  "bytes"
+#+end_src
