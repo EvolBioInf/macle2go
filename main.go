@@ -5,8 +5,8 @@ import (
 	"os"
 	"sort"
 	"strings"
-	"bufio"
-	
+	"text/tabwriter"
+
 	"github.com/evolbioinf/macle2go/mau"
 )
 
@@ -26,12 +26,13 @@ func printGOsym(fileName string, uniqSym map[string]bool, symGO mau.SymGO, args 
 		str = append(str, g)
 		sort.Strings(go2sy[g])
 	}
-	
+
 	sort.Strings(str)
 	f, err := os.Create(fileName)
 	mau.Check(err)
 	defer f.Close()
-	w := bufio.NewWriter(f)
+	w := new(tabwriter.Writer)
+	w.Init(f, 1, 8, 2, ' ', 0)
 	for _, g := range str {
 		l := len(go2sy[g])
 		if l >= args.M {
@@ -50,18 +51,15 @@ func runAnalysis(cmplx []mau.Interval, symGO mau.SymGO, args mau.Args) {
 
 	co, numWin, numIv, obsNumSym := mau.MergeCmplx(cmplx, args)
 	if args.Cm == "annotate" {
-		// a, b, c, d, p := mau.AnnCon(cmplx, args)
-		// fmt.Printf("#\tprom\t!prom\n")
-		// fmt.Printf("# compl\t%d\t%d\n", a, b)
-		// fmt.Printf("#!compl\t%d\t%d\n", c, d)
-		// fmt.Printf("#P: %.3e\n", p)
 		r := mau.AnnEnr(cmplx, numWin, obsNumSym, args)
 		mau.PrintIntervalSym(co, numWin, numIv, obsNumSym, r.E, r.P)
 	}
 	if args.Cm == "enrichment" {
 		uniqSym := make(map[string]bool)
 		for _, iv := range co {
-			for k, _ := range iv.Sym { uniqSym[k] = true }
+			for k, _ := range iv.Sym {
+				uniqSym[k] = true
+			}
 		}
 		if args.O != "" {
 			printGOsym(args.O, uniqSym, symGO, args)
@@ -74,17 +72,21 @@ func runAnalysis(cmplx []mau.Interval, symGO mau.SymGO, args mau.Args) {
 		sort.Strings(str)
 		gd := mau.GOdescr()
 		gc := mau.GOcat()
+		w := new(tabwriter.Writer)
+		w.Init(os.Stdout, 1, 8, 2, ' ', 0)
 		for _, g := range str {
 			d := gd[g]
+			d = strings.Replace(d, ", ", ",", -1)
 			d = strings.Replace(d, " ", "_", -1)
 			if obsGOcount[g] >= args.M {
 				c := gc[g]
 				o := obsGOcount[g]
 				e := ere.E[g]
 				p := ere.P[g]
-				fmt.Printf("%s\t%d\t%.2f\t%.2f\t%.2e\t%s\t%s\n", g, o, e, float64(o)/e, p, c, d)
+				fmt.Fprintf(w, "%s\t%d\t%.2f\t%.2f\t%.2e\t%s\t%s\n", g, o, e, float64(o)/e, p, c, d)
 			}
 		}
+		w.Flush()
 	}
 }
 
@@ -95,15 +97,17 @@ func progname(str string) string {
 
 func printCmplx(cmplx []mau.Interval) {
 	for _, c := range cmplx {
-		if len(c.Sym) > 0 { fmt.Println(c) }
+		if len(c.Sym) > 0 {
+			fmt.Println(c)
+		}
 	}
 }
 
 func main() {
-	var symGO    mau.SymGO
+	var symGO mau.SymGO
 	var args mau.Args
 	var cmplx []mau.Interval
-	
+
 	args = mau.GetArgs()
 	if args.Cm == "quantile" {
 		mau.Quantile(args)

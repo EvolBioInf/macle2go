@@ -28,26 +28,29 @@ func MergeCmplx(cmplx []Interval, args Args) (co []Interval, numWin, numIv, numS
 	var iv *Interval
 	open := false
 	n := 0
-
 	for _, i := range cmplx {
 		if i.Cm >= args.C && i.Cm <= args.CC {
-			if open {                
-				if i.Start <= iv.End + 1{    // extend
+			if open {
+				if i.Start <= iv.End+1 { // extend
 					iv.End = i.End
 					iv.Cm += i.Cm
-					if iv.Sym == nil { iv.Sym = make(map[string]bool) }
-					for k, _ := range i.Sym { iv.Sym[k] = true }
+					if iv.Sym == nil {
+						iv.Sym = make(map[string]bool)
+					}
+					for k, _ := range i.Sym {
+						iv.Sym[k] = true
+					}
 					n++
 					numWin++
 				} else {
-					iv.Cm /= float64(n)  // close old, open new
+					iv.Cm /= float64(n) // close old, open new
 					co = append(co, *iv)
 					iv = NewInterval(i.Chr, i.Start, i.End, i.Cm, "", i.Sym)
 					n = 1
 					numWin++
 					numIv++
 				}
-			} else {                             // open new
+			} else { // open new
 				iv = NewInterval(i.Chr, i.Start, i.End, i.Cm, "", i.Sym)
 				open = true
 				n = 1
@@ -55,12 +58,16 @@ func MergeCmplx(cmplx []Interval, args Args) (co []Interval, numWin, numIv, numS
 				numIv++
 			}
 		} else {
-			if open && i.Start > iv.End {        // close
+			if open && (i.Start > iv.End || i.Chr != iv.Chr) { // close
 				open = false
 				iv.Cm /= float64(n)
 				co = append(co, *iv)
-			} 
+			}
 		}
+	}
+	if open {
+		iv.Cm /= float64(n)
+		co = append(co, *iv)
 	}
 	numSym = symCount(co)
 
@@ -83,7 +90,9 @@ func rmNeg(macle ChrInterval, chr []string) []Interval {
 	for _, c := range chr {
 		iv := macle[c]
 		for _, i := range iv {
-			if i.Cm > -1 { ma = append(ma, i) }
+			if i.Cm > -1 {
+				ma = append(ma, i)
+			}
 		}
 	}
 
@@ -94,16 +103,26 @@ func rmNeg(macle ChrInterval, chr []string) []Interval {
 func annotate(macle ChrInterval, refGene []Interval, win, step int) {
 	for _, g := range refGene {
 		ma := macle[g.Chr]
-		if ma == nil { continue }
+		if ma == nil {
+			continue
+		}
 		s := sort.Search(len(ma), func(i int) bool { return ma[i].End >= g.Start })
 		e := sort.Search(len(ma), func(i int) bool { return ma[i].Start >= g.End })
 		l := len(ma)
-		if s == l && e == l { continue }  // No interval contains gene g
-		if s == l           { s = 0 }
-		if e == l           { e = l-1 }
+		if s == l && e == l {
+			continue
+		} // No interval intersects gene g
+		if s == l {
+			s = 0
+		}
+		if e == l {
+			e = l - 1
+		}
 		for i := s; i <= e; i++ {
 			if ma[i].Start <= g.End && ma[i].End >= g.Start {
-				if ma[i].Sym == nil { ma[i].Sym = make(map[string]bool) }
+				if ma[i].Sym == nil {
+					ma[i].Sym = make(map[string]bool)
+				}
 				for k, _ := range g.Sym {
 					ma[i].Sym[k] = true
 				}
@@ -140,12 +159,14 @@ func macle(fileName string, win int) (ChrInterval, int, []string) {
 	str2 = strings.Split(str1[1], "\t")
 	p2, err := strconv.Atoi(str2[1])
 	s := p2 - p1
-	// Allocate memory 
+	// Allocate memory
 	chrIv := make(ChrInterval)
 	// Iterate over lines
 	for _, s := range str1 {
 		// Skip empty lines and comment lines
-		if len(s) == 0 || s[0:1] == "#" { continue }
+		if len(s) == 0 || s[0:1] == "#" {
+			continue
+		}
 		// Split line into columns
 		str2 = strings.Split(s, "\t")
 		// Read chromosome, position, and complexity
@@ -166,7 +187,6 @@ func macle(fileName string, win int) (ChrInterval, int, []string) {
 	file.Close()
 	return chrIv, s, cs
 }
-
 
 // refGene reads a refGene file and returns a map of chromosomes to slices of intervals denoting genes
 func refGene(fileName string, args Args) []Interval {
@@ -203,7 +223,7 @@ func refGene(fileName string, args Args) []Interval {
 				start -= args.Pu
 			} else {
 				start = end - args.Pd
-				end   += args.Pu
+				end += args.Pu
 			}
 		}
 		gene := NewInterval(chr, start, end, 0, str2[12], nil)

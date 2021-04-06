@@ -1,8 +1,10 @@
 package mau
 
-import 	(
+import (
 	"fmt"
 	"math"
+	"os"
+	"text/tabwriter"
 )
 
 var bctable []float64 = []float64{
@@ -136,20 +138,30 @@ var bctable []float64 = []float64{
 
 //from: http://stackoverflow.com/questions/11032781/fastest-way-to-generate-binomial-coefficients
 func binomial(n, k int) float64 {
-	if 0 == k || n == k { return 1 }
-	if k > n { return 0 }
+	if 0 == k || n == k {
+		return 1
+	}
+	if k > n {
+		return 0
+	}
 
-	if k > (n - k) { k = n - k }
-	if 1 == k { return float64(n) }
+	if k > (n - k) {
+		k = n - k
+	}
+	if 1 == k {
+		return float64(n)
+	}
 
 	if n <= 54 && k <= 54 {
-		return bctable[(((n - 3) * (n - 3)) >> 2) + (k - 2)]
+		return bctable[(((n-3)*(n-3))>>2)+(k-2)]
 	}
 	// Last resort: actually calculate
 	b := 1.0
 	for i := 1; i <= k; i++ {
 		b *= float64(n - (k - i))
-		if (b < 0) { return -1 } // Overflow
+		if b < 0 {
+			return -1
+		} // Overflow
 		b /= float64(i)
 	}
 	return b
@@ -163,10 +175,10 @@ func sum(x int, p, l float64) float64 {
 	if !thresholdReached {
 		for k = 0; k <= x; k++ {
 			binom := math.Log(binomial(x, k))
-			pows := math.Pow(2, float64(x)) * math.Pow(p, float64(k)) * math.Pow(0.5 - p, float64(x - k)) *
-				math.Pow(1 - math.Pow(p, float64(k)) * math.Pow(0.5 - p, float64(x - k)), l)
+			pows := math.Pow(2, float64(x)) * math.Pow(p, float64(k)) * math.Pow(0.5-p, float64(x-k)) *
+				math.Pow(1-math.Pow(p, float64(k))*math.Pow(0.5-p, float64(x-k)), l)
 			s += math.Exp(math.Log(pows) + binom)
-			if s >= 1.0 - math.SmallestNonzeroFloat32 {
+			if s >= 1.0-math.SmallestNonzeroFloat32 {
 				thresholdReached = true
 				s = 1.0
 			}
@@ -177,13 +189,13 @@ func sum(x int, p, l float64) float64 {
 	return s
 }
 
-func mean(gc, l float64) float64{
-	var cp   float64    // cumulative probability
-	var p    float64    // G/C-content of query
-	var d    float64    // maximum divergence
-	var prob float64    // probability
-	var m    float64    // mean shustring length
-	var x    float64    // current shustring length
+func mean(gc, l float64) float64 {
+	var cp float64   // cumulative probability
+	var p float64    // G/C-content of query
+	var d float64    // maximum divergence
+	var prob float64 // probability
+	var m float64    // mean shustring length
+	var x float64    // current shustring length
 	var prevP1, curP1 float64
 
 	thresholdReached = false
@@ -192,13 +204,15 @@ func mean(gc, l float64) float64{
 	x = 0
 	m = 0.0
 	prevP1 = 0.0
-	d = 1. - 2. * (p/2. * p/2.)
-	for ; cp < 1.0 - math.SmallestNonzeroFloat32; {
+	d = 1. - 2.*(p/2.*p/2.)
+	for cp < 1.0-math.SmallestNonzeroFloat32 {
 		x++
-		curP1 = sum(int(x+1), p / 2, l)       // exact formula
-		curP1 *= 1.0 - math.Pow(1.0 - d, x)
-		prob = curP1 - prevP1                 // exact probability
-		if prob < 0 { prob = 0 }
+		curP1 = sum(int(x+1), p/2, l) // exact formula
+		curP1 *= 1.0 - math.Pow(1.0-d, x)
+		prob = curP1 - prevP1 // exact probability
+		if prob < 0 {
+			prob = 0
+		}
 		prevP1 = curP1
 		m += x * prob
 		cp += prob
@@ -207,12 +221,12 @@ func mean(gc, l float64) float64{
 }
 
 func variance(gc, l float64) float64 {
-	var cp   float64    // cumulative probability
-	var p    float64    // G/C-content of query
-	var d    float64    // maximum divergence
-	var prob float64    // probability
-	var m    float64    // mean shustring length
-	var x    float64    // current shustring length
+	var cp float64   // cumulative probability
+	var p float64    // G/C-content of query
+	var d float64    // maximum divergence
+	var prob float64 // probability
+	var m float64    // mean shustring length
+	var x float64    // current shustring length
 	var prevP1, curP1 float64
 
 	thresholdReached = false
@@ -221,13 +235,15 @@ func variance(gc, l float64) float64 {
 	x = 0
 	m = 0.0
 	prevP1 = 0.0
-	d = 1. - 2. * (p/2. * p/2.)
-	for ; cp < 1.0 - math.SmallestNonzeroFloat32; {
+	d = 1. - 2.*(p/2.*p/2.)
+	for cp < 1.0-math.SmallestNonzeroFloat32 {
 		x++
-		curP1 = sum(int(x), p / 2, l)       // exact formula
-		curP1 *= 1.0 - math.Pow(1.0 - d, x)
-		prob = curP1 - prevP1               // exact probability
-		if prob < 0 { prob = 0 }
+		curP1 = sum(int(x), p/2, l) // exact formula
+		curP1 *= 1.0 - math.Pow(1.0-d, x)
+		prob = curP1 - prevP1 // exact probability
+		if prob < 0 {
+			prob = 0
+		}
 		prevP1 = curP1
 		cp += prob
 		m += x * x * prob
@@ -245,19 +261,19 @@ func variance(gc, l float64) float64 {
 // w: window length
 // p: quantile
 func quant(g, l, w, p float64) (float64, float64) {
-	l *= 2  // forward & reverse strand
+	l *= 2 // forward & reverse strand
 	m := mean(g, l)
 	v := variance(g, l)
-//	v = v * w / m / (w - 2 * m) / (w - 2 * m) // exact
-	v = v / m / w                             // approximate, ignoring C_i
+	//	v = v * w / m / (w - 2 * m) / (w - 2 * m) // exact
+	v = v / m / w // approximate, ignoring C_i
 	s := math.Sqrt(v)
-	q := 1 + s * math.Sqrt(2) * math.Erfinv(2 * p - 1)
+	q := 1 + s*math.Sqrt(2)*math.Erfinv(2*p-1)
 	return q, gauss(m, s, q)
 }
 
 func gauss(a, s, x float64) float64 {
 	a = 1
-	f := 1. / math.Sqrt(2. * math.Pi) / s * math.Exp(-1./2. * (x-a)*(x-a)/s/s)
+	f := 1. / math.Sqrt(2.*math.Pi) / s * math.Exp(-1./2.*(x-a)*(x-a)/s/s)
 	return f
 }
 
@@ -265,6 +281,9 @@ func Quantile(a Args) {
 	var q, f float64
 
 	q, f = quant(a.Qg, a.Ql, a.Qw, a.Qp)
-	fmt.Printf("#SeqLen\tWinLen\tP\tQ\tF(Q)\n")
-	fmt.Printf("%v\t%v\t%v\t%v\t%v\n", a.Ql, a.Qw, a.Qp, q, f)
+	w := new(tabwriter.Writer)
+	w.Init(os.Stdout, 1, 8, 2, ' ', 0)
+	fmt.Fprintf(w, "# SeqLen\tWinLen\tP\tQ\tF(Q)\n")
+	fmt.Fprintf(w, "%g\t%v\t%v\t%g\t%g\n", a.Ql, a.Qw, a.Qp, q, f)
+	w.Flush()
 }
