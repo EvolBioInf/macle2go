@@ -7,5 +7,5 @@ doc/*.dvi
 doc/*.log
 doc/*.out
 doc/*.ps
-doc/*.tex
+doc/*.pdf
 test

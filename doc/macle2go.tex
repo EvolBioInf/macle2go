@@ -1,0 +1,303 @@
+\documentclass[a4paper]{article}
+\usepackage{graphics,eurosym,latexsym}
+\usepackage{listings}
+%% \lstset{columns=fixed,basicstyle=\ttfamily,numbers=left,numberstyle=\tiny,stepnumber=5,breaklines=true}
+\lstset{columns=fixed,basicstyle=\ttfamily,numbers=none,breaklines=true}
+\usepackage{times}
+\usepackage[round]{natbib}
+\usepackage{hyperref}
+\bibliographystyle{plainnat}
+\oddsidemargin=0cm
+\evensidemargin=0cm
+\headheight=0cm
+\headsep=0cm
+\newcommand{\be}{\begin{enumerate}}
+\newcommand{\ee}{\end{enumerate}}
+\newcommand{\bi}{\begin{itemize}}
+\newcommand{\ei}{\end{itemize}}
+\newcommand{\I}{\item}
+\newcommand{\ty}{\texttt}
+\newcommand{\kr}{K_{\rm r}}
+\newcommand{\cm}{C_{\rm M}}
+\textwidth=16cm
+\textheight=23cm
+\begin{document}
+\title{\ty{macle2go}: Annotate \ty{macle} Output}
+\author{Bernhard Haubold\\\small Max-Planck-Institute for Evolutionary Biology, Pl\"on, Germany}
+\maketitle
+\section{Introduction}
+\href{http://github.com/evolbioinf/macle}{\ty{Macle}} computes a
+complexity measure, the match complexity, by sliding a window across
+a given genome. A major motivation for this computation is to
+investigate the relationship between sequence complexity and gene
+function. For instance, we might ask
+\begin{itemize}
+\item Are there more genes in regions
+  of high complexity than expected by chance alone?
+\item Are genes in high-complexity regions enriched for certain
+  functions?
+\end{itemize}
+\ty{Macle2go} is designed to help answer such questions.
+\section{Getting Started}
+\ty{Macle2go} is written in Go, so assuming a working Go
+installation, you can get or update the program
+\begin{verbatim}
+go get -u github.com/evolbioinf/macle2go
+\end{verbatim}
+and install it
+\begin{verbatim}
+go install github.com/evolbioinf/macle2go
+\end{verbatim}
+Now test \ty{macle2go}
+\begin{verbatim}
+macle2go
+\end{verbatim}
+which should list its four subcommands, \ty{annotate},
+\ty{enrichment}, \ty{quantile}, and \ty{version}.
+
+\section{Tutorial}
+We begin by copying the example data files to our
+working directory
+\begin{verbatim}
+cp $GOPATH/github.com/evolbioinf/macle2go/data/*.bz2 .
+\end{verbatim}
+Then we uncompress them
+\begin{verbatim}
+bunzip2 *.bz2
+\end{verbatim}
+Now we are ready to work through the three major commands of
+\ty{macle2go}, \ty{quantile}, \ty{annotate}, and \ty{enrichment}.
+
+\subsection{\ty{quantile}} The match complexity, $\cm$, varies between 0 and 1. If $\cm=0$, the region is
+exactly repeated elsewhere in the genome. Random sequences, on the
+other hand, have an expected $\cm$ of 1. The distribution of $\cm$ for
+random sequences can be modelled by a normal distribution. Using the
+underlying match length distribution derived by \cite{hau09:est}, we
+can thus 
+compute the quantiles of $\cm$ for random sequences. But first, we list the options of \ty{quantile}
+\begin{lstlisting}
+macle2go quantile -h
+Usage: macle2go quantile options
+Example: macle2go quantile -l 2937655681 -g 0.408679 -w 20000 -p 0.05
+Options:
+	-g <NUM> gc-content
+	-l <NUM> genome length
+	-w <NUM> window length
+	-p <NUM> probability
+\end{lstlisting}
+Then run the example command
+\begin{verbatim}
+macle2go quantile -l 2937655681 -g 0.408679 -w 20000 -p 0.05
+\end{verbatim}
+where
+\begin{itemize}
+\item \ty{-l} is the sequence length, 2.9 Gb
+\item \ty{-g} its GC content, 0.41
+\item \ty{-w} the length of the sliding window, 20 kb
+\item \ty{-p} the probability mass covered up to the point to be determined, 5\%
+\end{itemize}
+This gives
+\begin{verbatim}
+macle2go quantile -l 2937655681 -g 0.408679 -w 20000 -p 0.05
+# SeqLen         WinLen  P     Q                  F(Q)
+2.937655681e+09  20000   0.05  0.996776307942256  52.62383289119413
+\end{verbatim}
+where the sequence length, window length, and probability are repeated
+from the input. \ty{Q} (0.9968) is the quantile, and \ty{F(Q)} (52.62) the value of the
+normal distribution at this point.
+
+\subsection{\ty{annote}}
+Again, we start by listing the options:
+\begin{lstlisting}
+macle2go annotate -h
+Usage: macle2go annotate options [inputFiles]
+Example macle2go annotate -r hsRefGene.txt -c 0.9968 -w 20000 hs_20k.mac
+Options:
+	-r <FILE> refGene file, e. g. http://hgdownload.soe.ucsc.edu/goldenPath/hg38/database/refGene.txt.gz
+	-w <NUM> window length
+	-c <NUM>  minimum complexity
+	[-C <NUM> maximum complexity; default: no upper limit]
+	[-I <NUM> iterations; default: 10000]
+	[-s <NUM> seed for random number generator; default: system-generated]
+	[-u <NUM> upstream promoter region; default: 1000]
+	[-d <NUM> downstream promoter region; default: 1000]
+	[-G consider whole genes; default: promoter]
+\end{lstlisting}
+The file \ty{hs\_20k.mac} contains complexity data calculated by
+\ty{macle} for the complete human genome with 20 kb sliding
+windows. List the first three lines:
+\begin{verbatim}
+head -n 3 hs_20k.mac 
+chr1	10000	-1.0000
+chr1	12000	-1.0000
+chr1	14000	-1.0000
+\end{verbatim}
+The first column is the chromosome name, followed by the
+midpoint of the sliding window and the $\cm$ value. If
+$\cm=-1$, as in our example, not enough nucleotides were sequenced in that window to
+compute a meaningful $\cm$-value.
+
+Our aim is now to extract all regions with a complexity equivalent to
+that of a random sequence. We have just computed the cutoff value for
+this using \ty{quantile}, so \ty{annotate} should extract regions with
+$\cm\ge 0.9968$. Each extracted region is annotated with the list of
+genes with intersecting promoters. A promoter is defined as an
+interval around the transcription start site (TSS). In \ty{annotate}
+the default promoter is $\mathrm{TSS}\pm 2\mathrm{kb}$, but this can
+be adjusted using the options \ty{-u} and \ty{-d}. The TSS of all
+human genes are listed in the file \ty{hsRefGene.txt} available from
+\begin{verbatim}
+http://hgdownload.soe.ucsc.edu/goldenPath/hg38/database/refGene.txt.gz
+\end{verbatim}
+We can now run \ty{annotate} and
+list the first 10 lines of its output:
+\begin{verbatim}
+macle2go annotate -r hsRefGene.txt -w 20000 -c 0.9968 hs_20k.mac | head
+# W    I    O    E       O/E   P
+# 700  181  343  178.67  1.92  -0.0001
+# Chr  Start      End        Len    C_M     Sym
+chr1   1320001    1346000    26000  0.9974  CPTP INTS11 MIR6808 TAS1R3
+chr1   2298001    2324000    26000  0.9999
+chr1   2496001    2536000    40000  1.0045  HES5 PANK4
+chr1   3058001    3088000    30000  1.0094  LINC00982 PRDM16
+chr1   3116001    3142000    26000  1.0004  MIR4251
+chr1   3216001    3238000    22000  0.9973
+chr1   8348001    8368000    20000  0.9968
+\end{verbatim}
+The first two lines summarize the result:
+\begin{itemize}
+\item 700 windows had $\cm\ge 0.9968$ (\ty{W}).
+\item Overlapping windows were merged to yield 181 intervals (\ty{I}).
+\item 339 genes were observed to intersect the 181 intervals (\ty{O}).
+\item 164.58 genes were expected (\ty{E}) by repeatedly sampling 700 random
+  windows. By default, the re-sampling is repeated $10^{4}$ times,
+  which can be changed using the \ty{-I} option.
+\item The ratio of observed to expected genes is 2.06.
+\item The hypothesis that $\ty{E}\ge\ty{O}$ is tested by computing the
+  frequency of observing random samples containing more than 339
+  genes. The negative $P$-value is meant to be read as ``less
+  than'', in our example $P<10^{-4}$.
+\end{itemize}
+The summary is followed by the 181 intervals identified. Each interval
+is described in one line consisting of six columns:
+\begin{enumerate}
+\item Chromosome
+\item Start position
+\item End position
+\item Length
+\item $\cm$
+\item Genes, possibly none, whose promoters intersect the region
+\end{enumerate}
+
+\subsection{\ty{enrichment}}
+Next we investigate whether the sample of 339 genes just discovered is
+enriched for particular functions. For this we need to link the names
+of genes to functional categories. The file \ty{gene2go}, which was
+obtained from
+\begin{verbatim}
+ftp://ftp.ncbi.nih.gov/gene/DATA/gene2go.gz
+\end{verbatim}
+lists this information:
+\begin{verbatim}
+head -n 2 gene2go
+#tax_id	GeneID	GO_ID	Evidence	Qualifier	GO_term	PubMed	Category
+3702	814629	GO:0005634	ISM	-	nucleus	-	Component
+\end{verbatim}
+``GO'' stands for ``gene ontology'', a system for describing gene
+functions \citep{gen00:gen}. Notice that genes are denoted by
+\ty{GeneID}, rather than symbol. So we need a second file to
+connect symbols to \ty{GeneID}. This is the purpose of
+\ty{Homo\_sapiens.gene\_info}, obtained from
+\begin{verbatim}
+ftp://ftp.ncbi.nih.gov/gene/DATA/GENE_INFO/Mammalia/Homo_sapiens.gene_info.gz
+\end{verbatim}
+It contains the following 16 columns:
+\begin{verbatim}
+head -n 1 Homo_sapiens.gene_info | tr '\t' '\n' | cat -n
+     1	#tax_id
+     2	GeneID
+     3	Symbol
+     4	LocusTag
+     5	Synonyms
+     6	dbXrefs
+     7	chromosome
+     8	map_location
+     9	description
+    10	type_of_gene
+    11	Symbol_from_nomenclature_authority
+    12	Full_name_from_nomenclature_authority
+    13	Nomenclature_status
+    14	Other_designations
+    15	Modification_date
+    16	Feature_type
+\end{verbatim}
+So columns 2 and 3 connect \ty{GeneID} to \ty{Symbol}:
+\begin{verbatim}
+cut -f 2,3 Homo_sapiens.gene_info | head -n 3
+GeneID	Symbol
+1	A1BG
+2	A2M
+\end{verbatim}
+However, we need not worry about this as \ty{enrichment} automatically
+connects
+symbols to GO-categories via \ty{GeneID}. We begin by listing its
+options:
+\begin{verbatim}
+macle2go enrichment -h
+Usage: macle2go enrichment options [inputFiles]
+Example: macle2go enrichment -i Homo_sapiens.gene_info -g gene2go -r hsRefGene.txt -c 0.9968 -w 20000 hs_20k.mac
+Options:
+	-r <FILE> refGene file, e. g. \
+           http://hgdownload.soe.ucsc.edu/goldenPath/hg38/database/refGene.txt.gz
+	-i <FILE> gene-info file, e. g. \
+           ftp://ftp.ncbi.nih.gov/gene/DATA/GENE_INFO/Mammalia/Homo_sapiens.gene_info.gz
+	-g <FILE> gene2go file, e. g. ftp://ftp.ncbi.nih.gov/gene/DATA/gene2go.gz
+	-c <NUM>  minimum complexity
+	-w <NUM>  window length
+	[-C <NUM>  maximum complexity; default: no upper limit]
+	[-I <NUM> iterations; default: 10000]
+	[-m <NUM>  minimum number of genes per GO-category; default: 10]
+	[-s <NUM> seed for random number generator; default: system-generated]
+	[-u <NUM> upstream promoter region; default: 1000]
+	[-d <NUM> downstream promoter region; default: 1000]
+	[-G analyze whole genes; default: promoter]
+\end{verbatim}
+\normalsize
+Next, we run the example command and save the result to a file:
+\begin{lstlisting}
+macle2go enrichment -i Homo_sapiens.gene_info -g gene2go -r
+   hsRefGene.txt -c 0.9968 -w 20000 hs_20k.mac > enr.txt
+\end{lstlisting}
+We take a look at the result
+\small
+\begin{verbatim}
+head -n 2 enr.txt
+GO:0000122  49   10.07   4.87   -1.00e-04  Process\
+   negative_regulation_of_transcription_by_RNA_polymerase_II
+GO:0000977  28   3.21    8.72   -1.00e-04  Function\
+   RNA_polymerase_II_regulatory_region_sequence-specific_DNA_binding
+\end{verbatim}
+\normalsize
+It consists of six columns:
+\begin{enumerate}
+\item GO accession
+\item Observed number of genes, $O$
+\item Expected number of genes, $E$
+\item Ratio of observed to expected genes
+\item $P$-value of the null hypothesis that $E\ge O$, which is
+  $<10^{-4}$ in the two examples shown
+\item Description of the GO-term
+\end{enumerate}
+As a final step in this tutorial  we extract all categories with
+$P<10^{-4}$ and sort them in reverse by the ratio of $O/E$:
+\begin{verbatim}
+awk '$5<0' enr.txt | sort -n -k 4 -r | head -n 5
+GO:0009954  11   0.29    37.87  -1.00e-04  Process    proximal/distal_pattern_formation
+GO:0009952  32   0.97    32.87  -1.00e-04  Process    anterior/posterior_pattern_specification
+GO:0048704  15   0.46    32.67  -1.00e-04  Process    embryonic_skeletal_system_morphogenesis
+GO:0042472  11   0.70    15.72  -1.00e-04  Process    inner_ear_morphogenesis
+GO:0042475  10   0.69    14.49  -1.00e-04  Process    odontogenesis_of_dentin-containing_tooth
+\end{verbatim}
+\bibliography{/home/haubold/References/references}
+\end{document}
+
