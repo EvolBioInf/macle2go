@@ -205,13 +205,20 @@ func mean(gc, l float64) float64 {
 	m = 0.0
 	prevP1 = 0.0
 	d = 1. - 2.*(p/2.*p/2.)
+	noteZero := false
 	for cp < 1.0-math.SmallestNonzeroFloat32 {
 		x++
 		curP1 = sum(int(x+1), p/2, l) // exact formula
 		curP1 *= 1.0 - math.Pow(1.0-d, x)
 		prob = curP1 - prevP1 // exact probability
+		if prob > 0 {
+			noteZero = true
+		}
 		if prob < 0 {
 			prob = 0
+		}
+		if prob == 0 && noteZero {
+			break
 		}
 		prevP1 = curP1
 		m += x * prob
@@ -236,17 +243,25 @@ func variance(gc, l float64) float64 {
 	m = 0.0
 	prevP1 = 0.0
 	d = 1. - 2.*(p/2.*p/2.)
+	noteZero := false
 	for cp < 1.0-math.SmallestNonzeroFloat32 {
 		x++
 		curP1 = sum(int(x), p/2, l) // exact formula
 		curP1 *= 1.0 - math.Pow(1.0-d, x)
 		prob = curP1 - prevP1 // exact probability
+		if prob > 0 {
+			noteZero = true
+		}
 		if prob < 0 {
 			prob = 0
+		}
+		if prob == 0 && noteZero {
+			break
 		}
 		prevP1 = curP1
 		cp += prob
 		m += x * x * prob
+
 	}
 	e := mean(gc, l) + 1
 	m -= e * e
